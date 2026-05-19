@@ -1,0 +1,38 @@
+name: "🚀 Feature Request (기능 추가)"
+description: "새로운 기능이나 API 개발을 요청할 때 사용합니다."
+title: "[FEAT] "
+labels: [ "enhancement" ]
+# 사진의 'Auto-assign new issues'를 해결하는 옵션 (생성자를 자동으로 할당)
+assignees: [ ]
+
+body:
+  - type: dropdown
+    id: domain
+    attributes:
+      label: "📌 담당 도메인 (클릭해서 선택하세요)"
+      options:
+        - "공통 (Common)"
+        - "인증/결제 (Auth/Payment - BE2)"
+        - "캠페인 (Campaign - BE3)"
+        - "지갑/에스크로 (Wallet/Escrow - BE1)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "📝 어떤 기능인가요?"
+      description: "구현할 API나 비즈니스 로직을 설명해 주세요."
+      placeholder: "예) 포트원 결제 성공 웹훅 처리 API 구현"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: "✅ 체크리스트"
+      options:
+        - label: "API 명세서(노션)에 작성되었나요?"
+          required: true
+        - label: "ERD 설계에 반영된 기능인가요?"
+          required: false
