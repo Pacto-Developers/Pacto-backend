@@ -31,6 +31,6 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 }

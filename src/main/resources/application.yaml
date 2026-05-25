@@ -4,3 +4,8 @@ spring:
 
   profiles:
     active: local
+
+  datasource:
+    hikari:
+      data-source-properties:
+        prepareThreshold: 0
