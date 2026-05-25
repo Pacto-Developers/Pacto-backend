@@ -1,5 +1,7 @@
 package com.pacto.auth.controller;
 
+import com.pacto.auth.dto.LoginRequest;
+import com.pacto.auth.dto.LoginResponse;
 import com.pacto.auth.dto.SignupRequest;
 import com.pacto.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -22,5 +24,12 @@ public class AuthController {
         authService.signup(request);
 
         return ResponseEntity.ok("회원가입 성공");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody LoginRequest request
+    ) {
+        return ResponseEntity.ok(authService.login(request));
     }
 }
