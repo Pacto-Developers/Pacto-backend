@@ -32,6 +32,7 @@ public class Campaign {
     private CampaignStatus status;
 
     @Column(columnDefinition = "jsonb")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     private String guidelines;
 
     @Column(nullable = false)
@@ -39,4 +40,23 @@ public class Campaign {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public Campaign(Long advertiserId, String title, String thumbnailUrl,
+                    Integer rewardPoint, String guidelines, LocalDateTime deadline) {
+        this.advertiserId = advertiserId;
+        this.title = title;
+        this.thumbnailUrl = thumbnailUrl;
+        this.rewardPoint = rewardPoint;
+        this.guidelines = guidelines;
+        this.deadline = deadline;
+        this.status = CampaignStatus.RECRUITING;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 상태 변경
+    public void updateStatus(CampaignStatus status) {
+        this.status = status;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
