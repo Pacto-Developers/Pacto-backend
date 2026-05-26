@@ -47,6 +47,16 @@ public class JwtProvider {
         );
     }
 
+    // role 추출
+    public String getRole(String token) {
+        return Jwts.parser()
+                .verifyWith(Keys.hmacShaKeyFor(secretKey.getBytes()))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("role", String.class);
+    }
+
     // 토큰 검증
     public boolean validateToken(String token) {
 

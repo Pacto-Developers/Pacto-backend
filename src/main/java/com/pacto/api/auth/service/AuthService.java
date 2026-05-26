@@ -8,11 +8,12 @@ import com.pacto.api.auth.entity.Role;
 import com.pacto.api.auth.entity.User;
 import com.pacto.api.auth.jwt.JwtProvider;
 import com.pacto.api.auth.repository.UserRepository;
-import org.springframework.transaction.annotation.Transactional;
+import com.pacto.api.wallet.entity.Wallet;
+import com.pacto.api.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +22,10 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final WalletRepository walletRepository;
 
+    @Transactional
     public void signup(SignupRequest request) {
-
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("이미 존재하는 이메일입니다.");
         }
@@ -34,7 +36,8 @@ public class AuthService {
                 .role(Role.BLOGGER)
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        walletRepository.save(Wallet.create(savedUser.getUserId()));
     }
 
     @Transactional(readOnly = true)

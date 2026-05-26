@@ -4,5 +4,6 @@ public enum PointHistoryType {
     CHARGE,
     LOCK,
     RELEASE,
-    REFUND
+    REFUND,
+    WITHDRAW
 }
