@@ -39,3 +39,7 @@ out/
 ### Claude Code ###
 .claude/
 docs/
+src/main/resources/application.yaml
+
+### application-local ###
+src/main/resources/application-local.yml
