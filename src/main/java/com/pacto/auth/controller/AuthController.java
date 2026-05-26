@@ -2,14 +2,13 @@ package com.pacto.auth.controller;
 
 import com.pacto.auth.dto.LoginRequest;
 import com.pacto.auth.dto.LoginResponse;
+import com.pacto.auth.dto.MeResponse;
 import com.pacto.auth.dto.SignupRequest;
 import com.pacto.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,5 +30,17 @@ public class AuthController {
             @RequestBody LoginRequest request
     ) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<MeResponse> me(
+            Authentication authentication
+    ) {
+
+        Long userId = (Long) authentication.getPrincipal();
+
+        return ResponseEntity.ok(
+                authService.getMe(userId)
+        );
     }
 }

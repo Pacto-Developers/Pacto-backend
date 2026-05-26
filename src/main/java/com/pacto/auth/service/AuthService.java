@@ -2,6 +2,7 @@ package com.pacto.auth.service;
 
 import com.pacto.auth.dto.LoginRequest;
 import com.pacto.auth.dto.LoginResponse;
+import com.pacto.auth.dto.MeResponse;
 import com.pacto.auth.dto.SignupRequest;
 import com.pacto.auth.entity.Role;
 import com.pacto.auth.entity.User;
@@ -52,5 +53,18 @@ public class AuthService {
         );
 
         return new LoginResponse(accessToken);
+    }
+
+    @Transactional(readOnly = true)
+    public MeResponse getMe(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        return new MeResponse(
+                user.getUserId(),
+                user.getEmail(),
+                user.getRole().name()
+        );
     }
 }
