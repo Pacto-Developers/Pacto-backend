@@ -1,4 +1,4 @@
-package com.pacto.auth.dto;
+package com.pacto.api.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

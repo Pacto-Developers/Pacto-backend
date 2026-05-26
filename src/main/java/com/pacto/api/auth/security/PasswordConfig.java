@@ -1,4 +1,4 @@
-package com.pacto.auth.security;
+package com.pacto.api.auth.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

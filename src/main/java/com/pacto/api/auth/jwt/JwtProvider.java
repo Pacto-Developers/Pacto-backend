@@ -1,4 +1,4 @@
-package com.pacto.auth.jwt;
+package com.pacto.api.auth.jwt;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

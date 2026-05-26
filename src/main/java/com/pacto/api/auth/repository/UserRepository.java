@@ -1,6 +1,6 @@
-package com.pacto.auth.repository;
+package com.pacto.api.auth.repository;
 
-import com.pacto.auth.entity.User;
+import com.pacto.api.auth.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

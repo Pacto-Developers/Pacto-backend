@@ -1,10 +1,10 @@
-package com.pacto.auth.controller;
+package com.pacto.api.auth.controller;
 
-import com.pacto.auth.dto.LoginRequest;
-import com.pacto.auth.dto.LoginResponse;
-import com.pacto.auth.dto.MeResponse;
-import com.pacto.auth.dto.SignupRequest;
-import com.pacto.auth.service.AuthService;
+import com.pacto.api.auth.dto.LoginRequest;
+import com.pacto.api.auth.dto.LoginResponse;
+import com.pacto.api.auth.dto.MeResponse;
+import com.pacto.api.auth.dto.SignupRequest;
+import com.pacto.api.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

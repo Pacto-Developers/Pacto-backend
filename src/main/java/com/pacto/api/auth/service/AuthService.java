@@ -1,13 +1,13 @@
-package com.pacto.auth.service;
+package com.pacto.api.auth.service;
 
-import com.pacto.auth.dto.LoginRequest;
-import com.pacto.auth.dto.LoginResponse;
-import com.pacto.auth.dto.MeResponse;
-import com.pacto.auth.dto.SignupRequest;
-import com.pacto.auth.entity.Role;
-import com.pacto.auth.entity.User;
-import com.pacto.auth.jwt.JwtProvider;
-import com.pacto.auth.repository.UserRepository;
+import com.pacto.api.auth.dto.LoginRequest;
+import com.pacto.api.auth.dto.LoginResponse;
+import com.pacto.api.auth.dto.MeResponse;
+import com.pacto.api.auth.dto.SignupRequest;
+import com.pacto.api.auth.entity.Role;
+import com.pacto.api.auth.entity.User;
+import com.pacto.api.auth.jwt.JwtProvider;
+import com.pacto.api.auth.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -1,4 +1,4 @@
-package com.pacto.auth.entity;
+package com.pacto.api.auth.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

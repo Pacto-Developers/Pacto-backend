@@ -1,4 +1,4 @@
-package com.pacto;
+package com.pacto.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
