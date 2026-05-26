@@ -1,7 +1,7 @@
-package com.pacto.api.domain.wallet.repository;
+package com.pacto.api.wallet.repository;
 
-import com.pacto.api.domain.wallet.entity.Withdrawal;
-import com.pacto.api.domain.wallet.entity.WithdrawalStatus;
+import com.pacto.api.wallet.entity.Withdrawal;
+import com.pacto.api.wallet.entity.WithdrawalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

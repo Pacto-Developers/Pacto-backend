@@ -1,7 +1,7 @@
-package com.pacto.api.domain.escrow.repository;
+package com.pacto.api.escrow.repository;
 
-import com.pacto.api.domain.escrow.entity.EscrowLedger;
-import com.pacto.api.domain.escrow.entity.EscrowStatus;
+import com.pacto.api.escrow.entity.EscrowLedger;
+import com.pacto.api.escrow.entity.EscrowStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

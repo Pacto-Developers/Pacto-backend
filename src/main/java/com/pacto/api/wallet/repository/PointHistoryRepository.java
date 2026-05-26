@@ -1,6 +1,6 @@
-package com.pacto.api.domain.wallet.repository;
+package com.pacto.api.wallet.repository;
 
-import com.pacto.api.domain.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

@@ -1,7 +1,7 @@
-package com.pacto.api.domain.escrow.repository;
+package com.pacto.api.escrow.repository;
 
-import com.pacto.api.domain.escrow.entity.EscrowLedger;
-import com.pacto.api.domain.escrow.entity.EscrowStatus;
+import com.pacto.api.escrow.entity.EscrowLedger;
+import com.pacto.api.escrow.entity.EscrowStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

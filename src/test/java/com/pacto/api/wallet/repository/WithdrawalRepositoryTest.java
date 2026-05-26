@@ -1,8 +1,8 @@
-package com.pacto.api.domain.wallet.repository;
+package com.pacto.api.wallet.repository;
 
-import com.pacto.api.domain.wallet.entity.Wallet;
-import com.pacto.api.domain.wallet.entity.Withdrawal;
-import com.pacto.api.domain.wallet.entity.WithdrawalStatus;
+import com.pacto.api.wallet.entity.Wallet;
+import com.pacto.api.wallet.entity.Withdrawal;
+import com.pacto.api.wallet.entity.WithdrawalStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

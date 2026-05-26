@@ -1,6 +1,6 @@
-package com.pacto.api.domain.wallet.repository;
+package com.pacto.api.wallet.repository;
 
-import com.pacto.api.domain.wallet.entity.Wallet;
+import com.pacto.api.wallet.entity.Wallet;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

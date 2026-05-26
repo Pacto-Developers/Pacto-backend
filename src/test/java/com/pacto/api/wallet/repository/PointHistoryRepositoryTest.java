@@ -1,8 +1,8 @@
-package com.pacto.api.domain.wallet.repository;
+package com.pacto.api.wallet.repository;
 
-import com.pacto.api.domain.wallet.entity.PointHistory;
-import com.pacto.api.domain.wallet.entity.PointHistoryType;
-import com.pacto.api.domain.wallet.entity.Wallet;
+import com.pacto.api.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistoryType;
+import com.pacto.api.wallet.entity.Wallet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

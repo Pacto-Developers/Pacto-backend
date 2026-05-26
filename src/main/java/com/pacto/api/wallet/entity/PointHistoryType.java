@@ -1,4 +1,4 @@
-package com.pacto.api.domain.wallet.entity;
+package com.pacto.api.wallet.entity;
 
 public enum PointHistoryType {
     CHARGE,

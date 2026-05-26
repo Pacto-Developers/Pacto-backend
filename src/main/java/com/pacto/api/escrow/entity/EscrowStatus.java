@@ -1,4 +1,4 @@
-package com.pacto.api.domain.escrow.entity;
+package com.pacto.api.escrow.entity;
 
 public enum EscrowStatus {
     LOCKED,
