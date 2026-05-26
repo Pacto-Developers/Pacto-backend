@@ -6,6 +6,8 @@ import com.pacto.api.wallet.dto.PointHistoryResponse;
 import com.pacto.api.wallet.dto.WalletResponse;
 import com.pacto.api.wallet.dto.WithdrawRequest;
 import com.pacto.api.wallet.dto.WithdrawResponse;
+import com.pacto.api.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistoryType;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.entity.Withdrawal;
 import com.pacto.api.wallet.repository.PointHistoryRepository;
@@ -53,6 +55,7 @@ public class WalletService {
 
         wallet.deductBalance(request.getAmount());
         walletRepository.save(wallet);
+        pointHistoryRepository.save(PointHistory.create(wallet, request.getAmount(), PointHistoryType.WITHDRAW, null));
 
         Withdrawal withdrawal = Withdrawal.create(
                 wallet, request.getAmount(), request.getBankName(), request.getAccountNumber()

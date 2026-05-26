@@ -96,6 +96,7 @@ class WalletServiceTest {
         assertThat(response.getStatus()).isEqualTo(WithdrawalStatus.PENDING);
         assertThat(wallet.getBalance()).isEqualTo(20000);
         verify(walletRepository).save(wallet);
+        verify(pointHistoryRepository).save(any());
         verify(withdrawalRepository).save(any(Withdrawal.class));
     }
 
