@@ -16,6 +16,7 @@ public class JwtProvider {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    // JWT 생성
     public String createToken(Long userId, String role) {
 
         Date now = new Date();
@@ -26,8 +27,40 @@ public class JwtProvider {
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(expiry)
-                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()),
-                        Jwts.SIG.HS256)
+                .signWith(
+                        Keys.hmacShaKeyFor(secretKey.getBytes()),
+                        Jwts.SIG.HS256
+                )
                 .compact();
+    }
+
+    // userId 추출
+    public Long getUserId(String token) {
+
+        return Long.parseLong(
+                Jwts.parser()
+                        .verifyWith(Keys.hmacShaKeyFor(secretKey.getBytes()))
+                        .build()
+                        .parseSignedClaims(token)
+                        .getPayload()
+                        .getSubject()
+        );
+    }
+
+    // 토큰 검증
+    public boolean validateToken(String token) {
+
+        try {
+
+            Jwts.parser()
+                    .verifyWith(Keys.hmacShaKeyFor(secretKey.getBytes()))
+                    .build()
+                    .parseSignedClaims(token);
+
+            return true;
+
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
