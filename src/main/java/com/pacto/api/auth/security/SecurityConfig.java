@@ -39,6 +39,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/signup",
                                 "/api/v1/auth/login",
                                 "/swagger-ui/**",
+                                "/v3/api-docs",
                                 "/v3/api-docs/**"
                         ).permitAll()
                         .requestMatchers("/api/v1/wallets/**").hasRole("BLOGGER")
