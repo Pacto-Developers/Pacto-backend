@@ -41,4 +41,8 @@ public class Wallet {
         wallet.lockedBalance = 0;
         return wallet;
     }
+
+    public void deductBalance(int amount) {
+        this.balance -= amount;
+    }
 }
