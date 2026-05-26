@@ -37,4 +37,10 @@ class WalletRepositoryTest {
         assertThat(found).isPresent();
         assertThat(found.get().getUserId()).isEqualTo(2L);
     }
+
+    @Test
+    void 존재하지_않는_userId로_조회시_빈_결과() {
+        Optional<Wallet> found = walletRepository.findByUserId(999L);
+        assertThat(found).isEmpty();
+    }
 }

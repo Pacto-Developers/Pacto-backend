@@ -21,7 +21,7 @@ public class Wallet {
     @Column(name = "wallet_id")
     private Long walletId;
 
-    @Column(name = "user_id", nullable = false, unique = true)
+    @Column(name = "user_id", nullable = false, unique = true, updatable = false)
     private Long userId;
 
     @Column(nullable = false)
