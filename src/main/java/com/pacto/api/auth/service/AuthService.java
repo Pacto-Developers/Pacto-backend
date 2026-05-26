@@ -24,6 +24,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final WalletRepository walletRepository;
 
+    @Transactional
     public void signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("이미 존재하는 이메일입니다.");
