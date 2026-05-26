@@ -30,12 +30,13 @@ class PointHistoryRepositoryTest {
 
     @Test
     void 포인트_내역_저장_후_조회() {
-        PointHistory history = PointHistory.create(wallet, 10000, PointHistoryType.CHARGE, null);
+        PointHistory history = PointHistory.create(wallet, 10000, PointHistoryType.CHARGE, 42L);
         PointHistory saved = pointHistoryRepository.save(history);
 
         assertThat(saved.getHistoryId()).isNotNull();
         assertThat(saved.getAmount()).isEqualTo(10000);
         assertThat(saved.getType()).isEqualTo(PointHistoryType.CHARGE);
+        assertThat(saved.getReferenceId()).isEqualTo(42L);
         assertThat(saved.getCreatedAt()).isNotNull();
     }
 

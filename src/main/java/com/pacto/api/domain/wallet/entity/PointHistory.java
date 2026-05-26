@@ -18,14 +18,14 @@ public class PointHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "history_id")
+    @Column(name = "history_id", updatable = false)
     private Long historyId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id", nullable = false, updatable = false)
     private Wallet wallet;
 
-    @Column(nullable = false)
+    @Column(name = "amount", nullable = false, updatable = false)
     private int amount;
 
     @Enumerated(EnumType.STRING)
