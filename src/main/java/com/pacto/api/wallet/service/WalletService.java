@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +39,7 @@ public class WalletService {
         return pointHistoryRepository.findByWallet_WalletId(wallet.getWalletId())
                 .stream()
                 .map(PointHistoryResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional
