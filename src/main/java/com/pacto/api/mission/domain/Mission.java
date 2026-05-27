@@ -58,4 +58,12 @@ public class Mission {
         this.status = MissionStatus.REJECTED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public Mission(Long campaignId, Long bloggerId) {
+        this.campaignId = campaignId;
+        this.bloggerId = bloggerId;
+        this.status = MissionStatus.IN_PROGRESS;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 }
