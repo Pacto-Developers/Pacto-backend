@@ -50,4 +50,11 @@ public class MissionService {
         mission.cancel();
         return missionRepository.save(mission);
     }
+
+    // 미션 수락
+    @Transactional
+    public Mission acceptMission(Long campaignId, Long bloggerId) {
+        Mission mission = new Mission(campaignId, bloggerId);
+        return missionRepository.save(mission);
+    }
 }

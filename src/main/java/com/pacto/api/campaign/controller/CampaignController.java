@@ -13,12 +13,16 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+import com.pacto.api.mission.domain.Mission;
+import com.pacto.api.mission.service.MissionService;
+
 @RestController
 @RequestMapping("/api/v1/campaigns")
 @RequiredArgsConstructor
 public class CampaignController {
 
     private final CampaignService campaignService;
+    private final MissionService missionService;
 
     // 캠페인 목록 조회
     @GetMapping
@@ -73,6 +77,22 @@ public class CampaignController {
                 "data", Map.of(
                         "campaign_id", campaign.getCampaignId(),
                         "status", campaign.getStatus()
+                )
+        ));
+    }
+
+    // 미션 수락
+    @PostMapping("/{campaignId}/missions")
+    public ResponseEntity<?> acceptMission(
+            @PathVariable Long campaignId,
+            @RequestParam Long bloggerId) {
+        Mission mission = missionService.acceptMission(campaignId, bloggerId);
+        return ResponseEntity.status(201).body(Map.of(
+                "success", true,
+                "message", "미션 수락 성공",
+                "data", Map.of(
+                        "mission_id", mission.getMissionId(),
+                        "status", mission.getStatus()
                 )
         ));
     }
