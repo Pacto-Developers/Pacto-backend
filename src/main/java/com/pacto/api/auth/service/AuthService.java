@@ -8,6 +8,10 @@ import com.pacto.api.auth.entity.Role;
 import com.pacto.api.auth.entity.User;
 import com.pacto.api.auth.jwt.JwtProvider;
 import com.pacto.api.auth.repository.UserRepository;
+import com.pacto.api.common.exception.DuplicateEmailException;
+import com.pacto.api.common.exception.EmailNotFoundException;
+import com.pacto.api.common.exception.InvalidPasswordException;
+import com.pacto.api.common.exception.UserNotFoundException;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +31,7 @@ public class AuthService {
     @Transactional
     public void signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("이미 존재하는 이메일입니다.");
+            throw new DuplicateEmailException();
         }
 
         User user = User.builder()
@@ -44,10 +48,10 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 이메일입니다."));
+                .orElseThrow(EmailNotFoundException::new);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+            throw new InvalidPasswordException();
         }
 
         String accessToken = jwtProvider.createToken(
@@ -62,7 +66,7 @@ public class AuthService {
     public MeResponse getMe(Long userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         return new MeResponse(
                 user.getUserId(),
