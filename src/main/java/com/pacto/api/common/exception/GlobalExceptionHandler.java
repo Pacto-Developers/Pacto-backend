@@ -10,6 +10,24 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<?> handleDuplicateEmail(DuplicateEmailException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("success", false, "message", e.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<?> handleInvalidPassword(InvalidPasswordException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("success", false, "message", e.getMessage()));
+    }
+
+    @ExceptionHandler({EmailNotFoundException.class, UserNotFoundException.class})
+    public ResponseEntity<?> handleAuthNotFound(RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("success", false, "message", e.getMessage()));
+    }
+
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<?> handleInsufficientBalance(InsufficientBalanceException e) {
         return ResponseEntity.badRequest()

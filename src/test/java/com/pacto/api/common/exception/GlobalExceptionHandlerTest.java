@@ -30,6 +30,18 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/test/not-found")
         void throwNotFound() { throw new WalletNotFoundException(); }
 
+        @GetMapping("/test/duplicate-email")
+        void throwDuplicateEmail() { throw new DuplicateEmailException(); }
+
+        @GetMapping("/test/email-not-found")
+        void throwEmailNotFound() { throw new EmailNotFoundException(); }
+
+        @GetMapping("/test/invalid-password")
+        void throwInvalidPassword() { throw new InvalidPasswordException(); }
+
+        @GetMapping("/test/user-not-found")
+        void throwUserNotFound() { throw new UserNotFoundException(); }
+
         @GetMapping("/test/runtime")
         void throwRuntime() { throw new RuntimeException("unexpected"); }
     }
@@ -48,6 +60,38 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("지갑을 찾을 수 없습니다."));
+    }
+
+    @Test
+    void 중복이메일_예외는_409_반환() throws Exception {
+        mockMvc.perform(get("/test/duplicate-email"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("이미 존재하는 이메일입니다."));
+    }
+
+    @Test
+    void 존재하지않는이메일_예외는_404_반환() throws Exception {
+        mockMvc.perform(get("/test/email-not-found"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("존재하지 않는 이메일입니다."));
+    }
+
+    @Test
+    void 비밀번호불일치_예외는_401_반환() throws Exception {
+        mockMvc.perform(get("/test/invalid-password"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("비밀번호가 일치하지 않습니다."));
+    }
+
+    @Test
+    void 유저없음_예외는_404_반환() throws Exception {
+        mockMvc.perform(get("/test/user-not-found"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("유저를 찾을 수 없습니다."));
     }
 
     @Test
