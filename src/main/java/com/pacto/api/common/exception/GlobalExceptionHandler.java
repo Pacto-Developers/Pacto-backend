@@ -40,6 +40,12 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<?> handlePaymentNotFound(PaymentNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(InvalidEscrowStateException.class)
     public ResponseEntity<?> handleInvalidEscrowState(InvalidEscrowStateException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
