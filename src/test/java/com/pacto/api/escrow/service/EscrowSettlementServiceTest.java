@@ -2,6 +2,8 @@ package com.pacto.api.escrow.service;
 
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.repository.CampaignRepository;
+import com.pacto.api.common.exception.CampaignNotFoundException;
+import com.pacto.api.common.exception.EscrowNotFoundException;
 import com.pacto.api.escrow.entity.EscrowLedger;
 import com.pacto.api.escrow.entity.EscrowStatus;
 import com.pacto.api.escrow.exception.InvalidEscrowStateException;
@@ -132,5 +134,31 @@ class EscrowSettlementServiceTest {
 
         verify(escrowLedgerRepository, never()).save(any());
         verifyNoInteractions(campaignRepository, walletRepository, pointHistoryRepository);
+    }
+
+    @Test
+    void release는_에스크로가_없으면_공통_예외를_던진다() {
+        when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> escrowSettlementService.release(505L))
+                .isInstanceOf(EscrowNotFoundException.class)
+                .hasMessage("에스크로를 찾을 수 없습니다.");
+
+        verifyNoInteractions(campaignRepository, walletRepository, pointHistoryRepository);
+    }
+
+    @Test
+    void release는_캠페인이_없으면_공통_예외를_던진다() {
+        EscrowLedger escrow = EscrowLedger.create(10L, 42L, 50000);
+        ReflectionTestUtils.setField(escrow, "escrowId", 505L);
+
+        when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.of(escrow));
+        when(campaignRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> escrowSettlementService.release(505L))
+                .isInstanceOf(CampaignNotFoundException.class)
+                .hasMessage("캠페인을 찾을 수 없습니다.");
+
+        verifyNoInteractions(walletRepository, pointHistoryRepository);
     }
 }

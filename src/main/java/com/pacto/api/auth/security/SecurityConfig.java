@@ -43,7 +43,7 @@ public class SecurityConfig {
                                 "/v3/api-docs",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers("/api/v1/wallets/**").hasRole("BLOGGER")
+                        .requestMatchers("/api/v1/wallets/**").hasAnyRole("BLOGGER", "ADVERTISER")
                         .anyRequest().authenticated()
                 )
 

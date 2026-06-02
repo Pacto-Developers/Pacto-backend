@@ -61,7 +61,7 @@ public class Wallet {
 
     public void decreaseLockedBalance(int amount) {
         if (this.lockedBalance < amount) {
-            throw new IllegalStateException("잠금 잔액이 부족합니다.");
+            throw new InsufficientBalanceException();
         }
         this.lockedBalance -= amount;
     }
