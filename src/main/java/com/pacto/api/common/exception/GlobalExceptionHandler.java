@@ -46,6 +46,12 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(PortOneApiException.class)
+    public ResponseEntity<?> handlePortOneApiException(PortOneApiException e) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(InvalidEscrowStateException.class)
     public ResponseEntity<?> handleInvalidEscrowState(InvalidEscrowStateException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
