@@ -1,5 +1,6 @@
 package com.pacto.api.wallet.service;
 
+import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.exception.InsufficientBalanceException;
 import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.wallet.dto.PointHistoryResponse;
@@ -14,10 +15,10 @@ import com.pacto.api.wallet.repository.PointHistoryRepository;
 import com.pacto.api.wallet.repository.WalletRepository;
 import com.pacto.api.wallet.repository.WithdrawalRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -35,13 +36,18 @@ public class WalletService {
     }
 
     @Transactional(readOnly = true)
-    public List<PointHistoryResponse> getMyHistories(Long userId) {
+    public PageResponse<PointHistoryResponse> getMyHistories(Long userId, int page, int size) {
         Wallet wallet = walletRepository.findByUserId(userId)
                 .orElseThrow(WalletNotFoundException::new);
-        return pointHistoryRepository.findByWallet_WalletId(wallet.getWalletId())
-                .stream()
-                .map(PointHistoryResponse::from)
-                .toList();
+        PageRequest pageRequest = PageRequest.of(
+                Math.max(page, 1) - 1,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        return PageResponse.from(
+                pointHistoryRepository.findByWallet_WalletId(wallet.getWalletId(), pageRequest),
+                PointHistoryResponse::from
+        );
     }
 
     @Transactional
@@ -55,11 +61,18 @@ public class WalletService {
 
         wallet.deductBalance(request.getAmount());
         walletRepository.save(wallet);
-        pointHistoryRepository.save(PointHistory.create(wallet, request.getAmount(), PointHistoryType.WITHDRAW, null));
 
         Withdrawal withdrawal = Withdrawal.create(
                 wallet, request.getAmount(), request.getBankName(), request.getAccountNumber()
         );
-        return WithdrawResponse.from(withdrawalRepository.save(withdrawal));
+        Withdrawal savedWithdrawal = withdrawalRepository.save(withdrawal);
+        pointHistoryRepository.save(PointHistory.create(
+                wallet,
+                -request.getAmount(),
+                PointHistoryType.WITHDRAW,
+                savedWithdrawal.getWithdrawalId()
+        ));
+
+        return WithdrawResponse.from(savedWithdrawal, wallet.getBalance());
     }
 }

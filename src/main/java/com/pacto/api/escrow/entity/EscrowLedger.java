@@ -51,4 +51,20 @@ public class EscrowLedger {
         escrow.status = EscrowStatus.LOCKED;
         return escrow;
     }
+
+    public void release() {
+        validateLocked();
+        this.status = EscrowStatus.RELEASED;
+    }
+
+    public void cancel() {
+        validateLocked();
+        this.status = EscrowStatus.CANCELED;
+    }
+
+    private void validateLocked() {
+        if (this.status != EscrowStatus.LOCKED) {
+            throw new IllegalStateException("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
+        }
+    }
 }
