@@ -4,6 +4,7 @@ import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.dto.CampaignRequestDto;
 import com.pacto.api.campaign.repository.CampaignRepository;
+import com.pacto.api.common.exception.CampaignNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +30,7 @@ public class CampaignService {
     @Transactional(readOnly = true)
     public Campaign getCampaign(Long campaignId) {
         return campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("캠페인을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CampaignNotFoundException());
     }
 
     // 캠페인 등록
@@ -50,7 +51,7 @@ public class CampaignService {
     @Transactional
     public Campaign updateCampaignStatus(Long campaignId, CampaignStatus status) {
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("캠페인을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CampaignNotFoundException());
         campaign.updateStatus(status);
         return campaignRepository.save(campaign);
     }

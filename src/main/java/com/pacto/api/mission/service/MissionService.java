@@ -1,5 +1,6 @@
 package com.pacto.api.mission.service;
 
+import com.pacto.api.common.exception.MissionNotFoundException;
 import com.pacto.api.mission.domain.Mission;
 import com.pacto.api.mission.domain.MissionStatus;
 import com.pacto.api.mission.repository.MissionRepository;
@@ -28,7 +29,7 @@ public class MissionService {
     @Transactional
     public Mission submitMission(Long missionId, String submittedUrl) {
         Mission mission = missionRepository.findById(missionId)
-                .orElseThrow(() -> new RuntimeException("미션을 찾을 수 없습니다."));
+                .orElseThrow(() -> new MissionNotFoundException());
         mission.submit(submittedUrl);
         return missionRepository.save(mission);
     }
@@ -37,7 +38,7 @@ public class MissionService {
     @Transactional
     public Mission approveMission(Long missionId) {
         Mission mission = missionRepository.findById(missionId)
-                .orElseThrow(() -> new RuntimeException("미션을 찾을 수 없습니다."));
+                .orElseThrow(() -> new MissionNotFoundException());
         mission.approve();
         return missionRepository.save(mission);
     }
@@ -46,7 +47,7 @@ public class MissionService {
     @Transactional
     public Mission cancelMission(Long missionId) {
         Mission mission = missionRepository.findById(missionId)
-                .orElseThrow(() -> new RuntimeException("미션을 찾을 수 없습니다."));
+                .orElseThrow(() -> new MissionNotFoundException());
         mission.cancel();
         return missionRepository.save(mission);
     }
