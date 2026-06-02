@@ -5,10 +5,10 @@ import com.pacto.api.wallet.entity.PointHistoryType;
 import com.pacto.api.wallet.entity.Wallet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,9 +45,11 @@ class PointHistoryRepositoryTest {
         pointHistoryRepository.save(PointHistory.create(wallet, 10000, PointHistoryType.CHARGE, null));
         pointHistoryRepository.save(PointHistory.create(wallet, -5000, PointHistoryType.LOCK, 1L));
 
-        List<PointHistory> histories = pointHistoryRepository.findByWallet_WalletId(wallet.getWalletId());
+        Page<PointHistory> histories = pointHistoryRepository.findByWallet_WalletId(
+                wallet.getWalletId(), PageRequest.of(0, 20)
+        );
 
-        assertThat(histories).hasSize(2);
+        assertThat(histories.getContent()).hasSize(2);
     }
 
     @Test
