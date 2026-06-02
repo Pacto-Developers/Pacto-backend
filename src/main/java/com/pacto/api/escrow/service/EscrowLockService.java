@@ -3,7 +3,6 @@ package com.pacto.api.escrow.service;
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.common.exception.CampaignNotFoundException;
-import com.pacto.api.common.exception.EscrowNotFoundException;
 import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.escrow.entity.EscrowLedger;
 import com.pacto.api.escrow.repository.EscrowLedgerRepository;
@@ -18,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class EscrowSettlementService {
+public class EscrowLockService {
 
     private final EscrowLedgerRepository escrowLedgerRepository;
     private final WalletRepository walletRepository;
@@ -26,51 +25,24 @@ public class EscrowSettlementService {
     private final PointHistoryRepository pointHistoryRepository;
 
     @Transactional
-    public void release(Long escrowId) {
-        EscrowLedger escrow = getEscrow(escrowId);
-        escrow.release();
-
-        Campaign campaign = getCampaign(escrow.getCampaignId());
+    public Long lock(Long campaignId, Long bloggerId) {
+        Campaign campaign = getCampaign(campaignId);
         Wallet advertiserWallet = getWallet(campaign.getAdvertiserId());
-        Wallet bloggerWallet = getWallet(escrow.getBloggerId());
+        int amount = campaign.getRewardPoint();
 
-        advertiserWallet.decreaseLockedBalance(escrow.getAmount());
-        bloggerWallet.addBalance(escrow.getAmount());
-
+        advertiserWallet.lockBalance(amount);
         walletRepository.save(advertiserWallet);
-        walletRepository.save(bloggerWallet);
-        escrowLedgerRepository.save(escrow);
-        pointHistoryRepository.save(PointHistory.create(
-                bloggerWallet,
-                escrow.getAmount(),
-                PointHistoryType.RELEASE,
-                escrow.getEscrowId()
-        ));
-    }
 
-    @Transactional
-    public void cancel(Long escrowId) {
-        EscrowLedger escrow = getEscrow(escrowId);
-        escrow.cancel();
-
-        Campaign campaign = getCampaign(escrow.getCampaignId());
-        Wallet advertiserWallet = getWallet(campaign.getAdvertiserId());
-
-        advertiserWallet.refundLockedBalance(escrow.getAmount());
-
-        walletRepository.save(advertiserWallet);
-        escrowLedgerRepository.save(escrow);
+        EscrowLedger escrow = EscrowLedger.create(campaignId, bloggerId, amount);
+        EscrowLedger savedEscrow = escrowLedgerRepository.save(escrow);
         pointHistoryRepository.save(PointHistory.create(
                 advertiserWallet,
-                escrow.getAmount(),
-                PointHistoryType.REFUND,
-                escrow.getEscrowId()
+                -amount,
+                PointHistoryType.LOCK,
+                savedEscrow.getEscrowId()
         ));
-    }
 
-    private EscrowLedger getEscrow(Long escrowId) {
-        return escrowLedgerRepository.findById(escrowId)
-                .orElseThrow(EscrowNotFoundException::new);
+        return savedEscrow.getEscrowId();
     }
 
     private Campaign getCampaign(Long campaignId) {

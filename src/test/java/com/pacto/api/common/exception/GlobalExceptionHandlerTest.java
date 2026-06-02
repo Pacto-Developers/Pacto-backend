@@ -31,6 +31,9 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/test/not-found")
         void throwNotFound() { throw new WalletNotFoundException(); }
 
+        @GetMapping("/test/escrow-not-found")
+        void throwEscrowNotFound() { throw new EscrowNotFoundException(); }
+
         @GetMapping("/test/duplicate-email")
         void throwDuplicateEmail() { throw new DuplicateEmailException(); }
 
@@ -66,6 +69,14 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("지갑을 찾을 수 없습니다."));
+    }
+
+    @Test
+    void 에스크로없음_예외는_404_반환() throws Exception {
+        mockMvc.perform(get("/test/escrow-not-found"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("에스크로를 찾을 수 없습니다."));
     }
 
     @Test
