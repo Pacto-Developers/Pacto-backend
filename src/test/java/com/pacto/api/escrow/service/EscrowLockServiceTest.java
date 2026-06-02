@@ -2,6 +2,7 @@ package com.pacto.api.escrow.service;
 
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.repository.CampaignRepository;
+import com.pacto.api.common.exception.CampaignNotFoundException;
 import com.pacto.api.common.exception.InsufficientBalanceException;
 import com.pacto.api.escrow.entity.EscrowLedger;
 import com.pacto.api.escrow.entity.EscrowStatus;
@@ -93,6 +94,20 @@ class EscrowLockServiceTest {
 
         assertThat(advertiserWallet.getBalance()).isEqualTo(30000);
         assertThat(advertiserWallet.getLockedBalance()).isEqualTo(0);
+        verify(walletRepository, never()).save(any());
+        verify(escrowLedgerRepository, never()).save(any());
+        verify(pointHistoryRepository, never()).save(any());
+    }
+
+    @Test
+    void lock은_캠페인이_없으면_공통_예외를_던진다() {
+        when(campaignRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> escrowLockService.lock(10L, 42L))
+                .isInstanceOf(CampaignNotFoundException.class)
+                .hasMessage("캠페인을 찾을 수 없습니다.");
+
+        verify(walletRepository, never()).findByUserId(any());
         verify(walletRepository, never()).save(any());
         verify(escrowLedgerRepository, never()).save(any());
         verify(pointHistoryRepository, never()).save(any());

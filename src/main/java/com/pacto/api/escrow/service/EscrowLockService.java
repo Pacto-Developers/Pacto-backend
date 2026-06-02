@@ -2,6 +2,7 @@ package com.pacto.api.escrow.service;
 
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.repository.CampaignRepository;
+import com.pacto.api.common.exception.CampaignNotFoundException;
 import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.escrow.entity.EscrowLedger;
 import com.pacto.api.escrow.repository.EscrowLedgerRepository;
@@ -46,7 +47,7 @@ public class EscrowLockService {
 
     private Campaign getCampaign(Long campaignId) {
         return campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("캠페인을 찾을 수 없습니다."));
+                .orElseThrow(CampaignNotFoundException::new);
     }
 
     private Wallet getWallet(Long userId) {
