@@ -45,4 +45,20 @@ public class Wallet {
     public void deductBalance(int amount) {
         this.balance -= amount;
     }
+
+    public void addBalance(int amount) {
+        this.balance += amount;
+    }
+
+    public void decreaseLockedBalance(int amount) {
+        if (this.lockedBalance < amount) {
+            throw new IllegalStateException("잠금 잔액이 부족합니다.");
+        }
+        this.lockedBalance -= amount;
+    }
+
+    public void refundLockedBalance(int amount) {
+        decreaseLockedBalance(amount);
+        addBalance(amount);
+    }
 }
