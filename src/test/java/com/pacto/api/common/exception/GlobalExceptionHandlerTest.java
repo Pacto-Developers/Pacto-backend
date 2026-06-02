@@ -1,5 +1,6 @@
 package com.pacto.api.common.exception;
 
+import com.pacto.api.escrow.exception.InvalidEscrowStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,6 +45,11 @@ class GlobalExceptionHandlerTest {
 
         @GetMapping("/test/runtime")
         void throwRuntime() { throw new RuntimeException("unexpected"); }
+
+        @GetMapping("/test/invalid-escrow-state")
+        void throwInvalidEscrowState() {
+            throw new InvalidEscrowStateException("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
+        }
     }
 
     @Test
@@ -100,5 +106,13 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("서버 오류가 발생했습니다."));
+    }
+
+    @Test
+    void 잘못된_에스크로_상태_예외는_409_반환() throws Exception {
+        mockMvc.perform(get("/test/invalid-escrow-state"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("LOCKED 상태의 에스크로만 처리할 수 있습니다."));
     }
 }

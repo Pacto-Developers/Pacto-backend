@@ -26,13 +26,14 @@ public class EscrowSettlementService {
     @Transactional
     public void release(Long escrowId) {
         EscrowLedger escrow = getEscrow(escrowId);
+        escrow.release();
+
         Campaign campaign = getCampaign(escrow.getCampaignId());
         Wallet advertiserWallet = getWallet(campaign.getAdvertiserId());
         Wallet bloggerWallet = getWallet(escrow.getBloggerId());
 
         advertiserWallet.decreaseLockedBalance(escrow.getAmount());
         bloggerWallet.addBalance(escrow.getAmount());
-        escrow.release();
 
         walletRepository.save(advertiserWallet);
         walletRepository.save(bloggerWallet);
@@ -48,11 +49,12 @@ public class EscrowSettlementService {
     @Transactional
     public void cancel(Long escrowId) {
         EscrowLedger escrow = getEscrow(escrowId);
+        escrow.cancel();
+
         Campaign campaign = getCampaign(escrow.getCampaignId());
         Wallet advertiserWallet = getWallet(campaign.getAdvertiserId());
 
         advertiserWallet.refundLockedBalance(escrow.getAmount());
-        escrow.cancel();
 
         walletRepository.save(advertiserWallet);
         escrowLedgerRepository.save(escrow);
