@@ -1,5 +1,6 @@
 package com.pacto.api.wallet.entity;
 
+import com.pacto.api.common.exception.InsufficientBalanceException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -44,6 +45,14 @@ public class Wallet {
 
     public void deductBalance(int amount) {
         this.balance -= amount;
+    }
+
+    public void lockBalance(int amount) {
+        if (this.balance < amount) {
+            throw new InsufficientBalanceException();
+        }
+        this.balance -= amount;
+        this.lockedBalance += amount;
     }
 
     public void addBalance(int amount) {
