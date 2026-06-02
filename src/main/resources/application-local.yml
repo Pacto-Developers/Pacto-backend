@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
+    username: postgres.xgkbjbhbzsjvjjfnyumz
+    password: iuIvyX2fe0xCiaAz
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    properties:
+      hibernate:
+        format_sql: true
+
+    show-sql: true
+
+jwt:
+  secret: pacto-blog-payment-jwt-secret-key-super-secret-2026
+  expiration: 3600000
