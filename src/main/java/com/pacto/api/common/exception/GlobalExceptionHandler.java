@@ -51,4 +51,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.internalServerError()
                 .body(CommonResponse.failure("서버 오류가 발생했습니다."));
     }
+
+    @ExceptionHandler(CampaignNotFoundException.class)
+    public ResponseEntity<?> handleCampaignNotFound(CampaignNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(MissionNotFoundException.class)
+    public ResponseEntity<?> handleMissionNotFound(MissionNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidMissionStatusException.class)
+    public ResponseEntity<?> handleInvalidMissionStatus(InvalidMissionStatusException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
 }

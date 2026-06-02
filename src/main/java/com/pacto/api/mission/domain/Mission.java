@@ -1,5 +1,6 @@
 package com.pacto.api.mission.domain;
 
+import com.pacto.api.common.exception.InvalidMissionStatusException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -37,7 +38,7 @@ public class Mission {
     // URL 제출
     public void submit(String submittedUrl) {
         if (this.status != MissionStatus.IN_PROGRESS) {
-            throw new RuntimeException("진행 중인 미션만 제출할 수 있습니다.");
+            throw new InvalidMissionStatusException("진행 중인 미션만 제출할 수 있습니다.");
         }
         this.submittedUrl = submittedUrl;
         this.status = MissionStatus.SUBMITTED;
@@ -47,7 +48,7 @@ public class Mission {
     // 미션 승인
     public void approve() {
         if (this.status != MissionStatus.SUBMITTED) {
-            throw new RuntimeException("제출된 미션만 승인할 수 있습니다.");
+            throw new InvalidMissionStatusException("제출된 미션만 승인할 수 있습니다.");
         }
         this.status = MissionStatus.APPROVED;
         this.updatedAt = LocalDateTime.now();
