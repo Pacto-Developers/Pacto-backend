@@ -1,5 +1,6 @@
 package com.pacto.api.escrow.entity;
 
+import com.pacto.api.escrow.exception.InvalidEscrowStateException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -64,7 +65,7 @@ public class EscrowLedger {
 
     private void validateLocked() {
         if (this.status != EscrowStatus.LOCKED) {
-            throw new IllegalStateException("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
+            throw new InvalidEscrowStateException("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.pacto.api.common.exception;
 
 import com.pacto.api.common.response.CommonResponse;
+import com.pacto.api.escrow.exception.InvalidEscrowStateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,6 +37,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(WalletNotFoundException.class)
     public ResponseEntity<?> handleWalletNotFound(WalletNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidEscrowStateException.class)
+    public ResponseEntity<?> handleInvalidEscrowState(InvalidEscrowStateException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(CommonResponse.failure(e.getMessage()));
     }
 

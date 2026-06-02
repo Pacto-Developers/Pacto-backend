@@ -4,6 +4,7 @@ import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.escrow.entity.EscrowLedger;
 import com.pacto.api.escrow.entity.EscrowStatus;
+import com.pacto.api.escrow.exception.InvalidEscrowStateException;
 import com.pacto.api.escrow.repository.EscrowLedgerRepository;
 import com.pacto.api.wallet.entity.PointHistory;
 import com.pacto.api.wallet.entity.PointHistoryType;
@@ -22,8 +23,11 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,5 +102,35 @@ class EscrowSettlementServiceTest {
         assertThat(history.getReferenceId()).isEqualTo(505L);
         verify(escrowLedgerRepository).save(escrow);
         verify(walletRepository).save(advertiserWallet);
+    }
+
+    @Test
+    void release는_LOCKED가_아니면_중복_처리를_막는다() {
+        EscrowLedger escrow = EscrowLedger.create(10L, 42L, 50000);
+        escrow.release();
+
+        when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.of(escrow));
+
+        assertThatThrownBy(() -> escrowSettlementService.release(505L))
+                .isInstanceOf(InvalidEscrowStateException.class)
+                .hasMessage("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
+
+        verify(escrowLedgerRepository, never()).save(any());
+        verifyNoInteractions(campaignRepository, walletRepository, pointHistoryRepository);
+    }
+
+    @Test
+    void cancel은_LOCKED가_아니면_중복_처리를_막는다() {
+        EscrowLedger escrow = EscrowLedger.create(10L, 42L, 50000);
+        escrow.cancel();
+
+        when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.of(escrow));
+
+        assertThatThrownBy(() -> escrowSettlementService.cancel(505L))
+                .isInstanceOf(InvalidEscrowStateException.class)
+                .hasMessage("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
+
+        verify(escrowLedgerRepository, never()).save(any());
+        verifyNoInteractions(campaignRepository, walletRepository, pointHistoryRepository);
     }
 }
