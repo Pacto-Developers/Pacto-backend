@@ -14,4 +14,5 @@ public class CampaignRequestDto {
     private Integer rewardPoint;
     private String guidelines;
     private LocalDateTime deadline;
+    private Integer totalSlots;
 }

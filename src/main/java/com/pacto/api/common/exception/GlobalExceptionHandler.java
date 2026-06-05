@@ -52,6 +52,12 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(CampaignSlotFullException.class)
+    public ResponseEntity<?> handleCampaignSlotFull(CampaignSlotFullException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleRuntimeException(RuntimeException e) {
         return ResponseEntity.internalServerError()
