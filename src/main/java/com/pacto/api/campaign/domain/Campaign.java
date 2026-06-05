@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "campaigns")
@@ -34,7 +35,7 @@ public class Campaign {
 
     @Column(columnDefinition = "jsonb")
     @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
-    private String guidelines;
+    private Map<String, Object> guidelines;
 
     @Column(nullable = false)
     private LocalDateTime deadline;
@@ -49,7 +50,7 @@ public class Campaign {
     private LocalDateTime updatedAt;
 
     public Campaign(Long advertiserId, String title, String thumbnailUrl,
-                    Integer rewardPoint, String guidelines, LocalDateTime deadline,
+                    Integer rewardPoint, Map<String, Object> guidelines, LocalDateTime deadline,
                     Integer totalSlots) {
         this.advertiserId = advertiserId;
         this.title = title;
