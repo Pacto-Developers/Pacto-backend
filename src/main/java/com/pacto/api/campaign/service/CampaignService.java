@@ -42,7 +42,8 @@ public class CampaignService {
                 dto.getThumbnailUrl(),
                 dto.getRewardPoint(),
                 dto.getGuidelines(),
-                dto.getDeadline()
+                dto.getDeadline(),
+                dto.getTotalSlots()
         );
         return campaignRepository.save(campaign);
     }

@@ -5,6 +5,8 @@ import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.dto.CampaignRequestDto;
 import com.pacto.api.campaign.service.CampaignService;
 import com.pacto.api.common.response.CommonResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,12 +23,13 @@ import com.pacto.api.mission.service.MissionService;
 @RestController
 @RequestMapping("/api/v1/campaigns")
 @RequiredArgsConstructor
+@Tag(name = "Campaign", description = "캠페인 등록 및 조회 API")
 public class CampaignController {
 
     private final CampaignService campaignService;
     private final MissionService missionService;
 
-    // 캠페인 목록 조회
+    @Operation(summary = "캠페인 목록 조회")
     @GetMapping
     public ResponseEntity<?> getCampaigns(
             @RequestParam(required = false) CampaignStatus status,
@@ -36,14 +39,14 @@ public class CampaignController {
         return ResponseEntity.ok(CommonResponse.success("캠페인 목록 조회 성공", campaigns));
     }
 
-    // 캠페인 상세 조회
+    @Operation(summary = "캠페인 상세 조회")
     @GetMapping("/{campaignId}")
     public ResponseEntity<?> getCampaign(@PathVariable Long campaignId) {
         Campaign campaign = campaignService.getCampaign(campaignId);
         return ResponseEntity.ok(CommonResponse.success("캠페인 상세 조회 성공", campaign));
     }
 
-    // 캠페인 등록
+    @Operation(summary = "캠페인 등록")
     @PostMapping
     public ResponseEntity<?> createCampaign(@RequestBody CampaignRequestDto dto) {
         Long advertiserId = (Long) SecurityContextHolder.getContext()
@@ -57,7 +60,7 @@ public class CampaignController {
         );
     }
 
-    // 캠페인 상태 변경
+    @Operation(summary = "캠페인 상태 변경")
     @PatchMapping("/{campaignId}/status")
     public ResponseEntity<?> updateCampaignStatus(
             @PathVariable Long campaignId,
@@ -73,7 +76,7 @@ public class CampaignController {
         );
     }
 
-    // 미션 수락
+    @Operation(summary = "미션 수락")
     @PostMapping("/{campaignId}/missions")
     public ResponseEntity<?> acceptMission(@PathVariable Long campaignId) {
         Long bloggerId = (Long) SecurityContextHolder.getContext()
