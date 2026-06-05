@@ -7,6 +7,7 @@ import com.pacto.api.mission.dto.MissionRequestDto;
 import com.pacto.api.mission.service.MissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,10 +23,13 @@ public class MissionController {
     // 내 미션 목록 조회
     @GetMapping("/me")
     public ResponseEntity<?> getMyMissions(
-            @RequestParam(required = false) Long bloggerId,
             @RequestParam(required = false) MissionStatus status) {
+        Long bloggerId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
         List<Mission> missions = missionService.getMyMissions(bloggerId, status);
-        return ResponseEntity.ok(CommonResponse.success("미션 목록 조회 성공", missions));
+        return ResponseEntity.ok(
+                CommonResponse.success("미션 목록 조회 성공", missions)
+        );
     }
 
     // URL 제출
