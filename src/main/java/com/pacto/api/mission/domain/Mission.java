@@ -54,15 +54,24 @@ public class Mission {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // 미션 반려 (광고주가 제출된 URL 반려)
+    public void reject() {
+        if (this.status != MissionStatus.SUBMITTED) {
+            throw new InvalidMissionStatusException("제출된 미션만 반려할 수 있습니다.");
+        }
+        this.status = MissionStatus.REJECTED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     // 미션 취소
     public void cancel() {
         if (this.status == MissionStatus.APPROVED) {
             throw new InvalidMissionStatusException("이미 승인된 미션은 취소할 수 없습니다.");
         }
-        if (this.status == MissionStatus.REJECTED) {
+        if (this.status == MissionStatus.CANCELLED) {
             throw new InvalidMissionStatusException("이미 취소된 미션입니다.");
         }
-        this.status = MissionStatus.REJECTED;
+        this.status = MissionStatus.CANCELLED;
         this.updatedAt = LocalDateTime.now();
     }
 

@@ -61,6 +61,18 @@ public class MissionController {
         );
     }
 
+    @Operation(summary = "미션 반려 (광고주)")
+    @PatchMapping("/{missionId}/reject")
+    public ResponseEntity<?> rejectMission(@PathVariable Long missionId) {
+        Mission mission = missionService.rejectMission(missionId);
+        return ResponseEntity.ok(
+                CommonResponse.success("미션 반려 완료", Map.of(
+                        "mission_id", mission.getMissionId(),
+                        "status", mission.getStatus()
+                ))
+        );
+    }
+
     @Operation(summary = "미션 취소")
     @PatchMapping("/{missionId}/cancel")
     public ResponseEntity<?> cancelMission(

@@ -4,5 +4,6 @@ public enum MissionStatus {
     IN_PROGRESS,
     SUBMITTED,
     APPROVED,
-    REJECTED
+    REJECTED,
+    CANCELLED
 }
