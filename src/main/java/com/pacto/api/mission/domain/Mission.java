@@ -56,6 +56,12 @@ public class Mission {
 
     // 미션 취소
     public void cancel() {
+        if (this.status == MissionStatus.APPROVED) {
+            throw new InvalidMissionStatusException("이미 승인된 미션은 취소할 수 없습니다.");
+        }
+        if (this.status == MissionStatus.REJECTED) {
+            throw new InvalidMissionStatusException("이미 취소된 미션입니다.");
+        }
         this.status = MissionStatus.REJECTED;
         this.updatedAt = LocalDateTime.now();
     }
@@ -63,6 +69,15 @@ public class Mission {
     public Mission(Long campaignId, Long bloggerId) {
         this.campaignId = campaignId;
         this.bloggerId = bloggerId;
+        this.status = MissionStatus.IN_PROGRESS;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Mission(Long campaignId, Long bloggerId, Long escrowId) {
+        this.campaignId = campaignId;
+        this.bloggerId = bloggerId;
+        this.escrowId = escrowId;
         this.status = MissionStatus.IN_PROGRESS;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();

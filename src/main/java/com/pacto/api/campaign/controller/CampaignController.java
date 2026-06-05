@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -45,7 +46,9 @@ public class CampaignController {
     // 캠페인 등록
     @PostMapping
     public ResponseEntity<?> createCampaign(@RequestBody CampaignRequestDto dto) {
-        Campaign campaign = campaignService.createCampaign(dto);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Campaign campaign = campaignService.createCampaign(dto, advertiserId);
         return ResponseEntity.status(201).body(
                 CommonResponse.success("캠페인 등록 성공", Map.of(
                         "campaign_id", campaign.getCampaignId(),
@@ -72,9 +75,9 @@ public class CampaignController {
 
     // 미션 수락
     @PostMapping("/{campaignId}/missions")
-    public ResponseEntity<?> acceptMission(
-            @PathVariable Long campaignId,
-            @RequestParam Long bloggerId) {
+    public ResponseEntity<?> acceptMission(@PathVariable Long campaignId) {
+        Long bloggerId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
         Mission mission = missionService.acceptMission(campaignId, bloggerId);
         return ResponseEntity.status(201).body(
                 CommonResponse.success("미션 수락 성공", Map.of(

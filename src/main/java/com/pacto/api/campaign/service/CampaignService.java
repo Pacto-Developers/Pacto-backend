@@ -35,9 +35,9 @@ public class CampaignService {
 
     // 캠페인 등록
     @Transactional
-    public Campaign createCampaign(CampaignRequestDto dto) {
+    public Campaign createCampaign(CampaignRequestDto dto, Long advertiserId) {
         Campaign campaign = new Campaign(
-                dto.getAdvertiserId(),
+                advertiserId,
                 dto.getTitle(),
                 dto.getThumbnailUrl(),
                 dto.getRewardPoint(),
