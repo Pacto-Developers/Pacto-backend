@@ -1,6 +1,10 @@
 package com.pacto.api.payment.service;
 
+import com.pacto.api.common.exception.PaymentAlreadyProcessedException;
 import com.pacto.api.common.exception.PaymentNotFoundException;
+import com.pacto.api.common.exception.PaymentVerificationException;
+import com.pacto.api.payment.client.PortOneClient;
+import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.dto.PaymentVerifyRequest;
@@ -20,6 +24,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +33,7 @@ import static org.mockito.Mockito.when;
 class PaymentServiceTest {
 
     @Mock PaymentRepository paymentRepository;
+    @Mock PortOneClient portOneClient;
     @InjectMocks PaymentService paymentService;
 
     @Test
@@ -48,17 +55,21 @@ class PaymentServiceTest {
     }
 
     @Test
-    void 결제_검증_요청은_내_결제_요청만_조회한다() {
+    void 결제_검증_성공시_PAID_상태로_변경한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
         PaymentVerifyRequest request = new PaymentVerifyRequest();
         ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
         ReflectionTestUtils.setField(request, "impUid", "imp-1");
         when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(portOneClient.getPayment("imp-1"))
+                .thenReturn(new PortOnePaymentResponse("imp-1", "payment-1", 10000, "paid"));
 
         PaymentResponse response = paymentService.verifyPayment(1L, request);
 
         assertThat(response.getMerchantUid()).isEqualTo("payment-1");
-        assertThat(response.getStatus()).isEqualTo(PaymentStatus.READY);
+        assertThat(response.getImpUid()).isEqualTo("imp-1");
+        assertThat(response.getStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
     }
 
     @Test
@@ -71,5 +82,92 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.verifyPayment(1L, request))
                 .isInstanceOf(PaymentNotFoundException.class)
                 .hasMessage("결제 요청을 찾을 수 없습니다.");
+
+        verifyNoInteractions(portOneClient);
+    }
+
+    @Test
+    void 이미_처리된_결제는_다시_검증할_수_없다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        payment.markPaid("imp-1");
+        PaymentVerifyRequest request = new PaymentVerifyRequest();
+        ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
+        ReflectionTestUtils.setField(request, "impUid", "imp-1");
+        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.verifyPayment(1L, request))
+                .isInstanceOf(PaymentAlreadyProcessedException.class)
+                .hasMessage("이미 처리된 결제입니다.");
+
+        verifyNoInteractions(portOneClient);
+    }
+
+    @Test
+    void 포트원_결제_요청번호가_다르면_검증에_실패한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        PaymentVerifyRequest request = new PaymentVerifyRequest();
+        ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
+        ReflectionTestUtils.setField(request, "impUid", "imp-1");
+        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(portOneClient.getPayment("imp-1"))
+                .thenReturn(new PortOnePaymentResponse("imp-1", "payment-2", 10000, "paid"));
+
+        assertThatThrownBy(() -> paymentService.verifyPayment(1L, request))
+                .isInstanceOf(PaymentVerificationException.class)
+                .hasMessage("결제 요청 번호가 일치하지 않습니다.");
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
+    }
+
+    @Test
+    void 포트원_결제_금액이_다르면_검증에_실패한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        PaymentVerifyRequest request = new PaymentVerifyRequest();
+        ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
+        ReflectionTestUtils.setField(request, "impUid", "imp-1");
+        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(portOneClient.getPayment("imp-1"))
+                .thenReturn(new PortOnePaymentResponse("imp-1", "payment-1", 9000, "paid"));
+
+        assertThatThrownBy(() -> paymentService.verifyPayment(1L, request))
+                .isInstanceOf(PaymentVerificationException.class)
+                .hasMessage("결제 금액이 일치하지 않습니다.");
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
+    }
+
+    @Test
+    void 포트원_결제_상태가_paid가_아니면_검증에_실패한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        PaymentVerifyRequest request = new PaymentVerifyRequest();
+        ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
+        ReflectionTestUtils.setField(request, "impUid", "imp-1");
+        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(portOneClient.getPayment("imp-1"))
+                .thenReturn(new PortOnePaymentResponse("imp-1", "payment-1", 10000, "ready"));
+
+        assertThatThrownBy(() -> paymentService.verifyPayment(1L, request))
+                .isInstanceOf(PaymentVerificationException.class)
+                .hasMessage("결제가 완료되지 않았습니다.");
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
+    }
+
+    @Test
+    void 요청한_포트원_결제번호와_조회된_결제번호가_다르면_검증에_실패한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        PaymentVerifyRequest request = new PaymentVerifyRequest();
+        ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
+        ReflectionTestUtils.setField(request, "impUid", "imp-1");
+        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(portOneClient.getPayment("imp-1"))
+                .thenReturn(new PortOnePaymentResponse("imp-2", "payment-1", 10000, "paid"));
+
+        assertThatThrownBy(() -> paymentService.verifyPayment(1L, request))
+                .isInstanceOf(PaymentVerificationException.class)
+                .hasMessage("포트원 결제 번호가 일치하지 않습니다.");
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
+        verify(paymentRepository, never()).save(any());
     }
 }
