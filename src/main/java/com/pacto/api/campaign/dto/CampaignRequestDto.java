@@ -9,11 +9,10 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 public class CampaignRequestDto {
-
-    private Long advertiserId;
     private String title;
     private String thumbnailUrl;
     private Integer rewardPoint;
     private String guidelines;
     private LocalDateTime deadline;
+    private Integer totalSlots;
 }

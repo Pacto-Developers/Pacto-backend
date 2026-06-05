@@ -1,5 +1,6 @@
 package com.pacto.api.campaign.domain;
 
+import com.pacto.api.common.exception.CampaignSlotFullException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,11 +39,18 @@ public class Campaign {
     @Column(nullable = false)
     private LocalDateTime deadline;
 
+    @Column(nullable = false)
+    private Integer totalSlots;
+
+    @Column(nullable = false)
+    private Integer remainingSlots;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public Campaign(Long advertiserId, String title, String thumbnailUrl,
-                    Integer rewardPoint, String guidelines, LocalDateTime deadline) {
+                    Integer rewardPoint, String guidelines, LocalDateTime deadline,
+                    Integer totalSlots) {
         this.advertiserId = advertiserId;
         this.title = title;
         this.thumbnailUrl = thumbnailUrl;
@@ -50,6 +58,8 @@ public class Campaign {
         this.guidelines = guidelines;
         this.deadline = deadline;
         this.status = CampaignStatus.RECRUITING;
+        this.totalSlots = totalSlots;
+        this.remainingSlots = totalSlots;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -57,6 +67,15 @@ public class Campaign {
     // 상태 변경
     public void updateStatus(CampaignStatus status) {
         this.status = status;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 슬롯 차감
+    public void decreaseSlot() {
+        if (this.remainingSlots <= 0) {
+            throw new CampaignSlotFullException();
+        }
+        this.remainingSlots--;
         this.updatedAt = LocalDateTime.now();
     }
 }
