@@ -62,7 +62,6 @@ public class MissionService {
     }
 
     // 미션 수락
-// 미션 수락
     @Transactional
     public Mission acceptMission(Long campaignId, Long bloggerId) {
         Campaign campaign = campaignRepository.findById(campaignId)
@@ -73,5 +72,11 @@ public class MissionService {
         Long escrowId = escrowLockService.lock(campaignId, bloggerId);
         Mission mission = new Mission(campaignId, bloggerId, escrowId);
         return missionRepository.save(mission);
+    }
+
+    // 캠페인별 미션 목록 조회
+    @Transactional(readOnly = true)
+    public List<Mission> getMissionsByCampaignId(Long campaignId) {
+        return missionRepository.findByCampaignId(campaignId);
     }
 }

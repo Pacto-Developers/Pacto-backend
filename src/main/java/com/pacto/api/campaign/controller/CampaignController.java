@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 import com.pacto.api.mission.domain.Mission;
@@ -87,6 +88,16 @@ public class CampaignController {
                         "mission_id", mission.getMissionId(),
                         "status", mission.getStatus()
                 ))
+        );
+    }
+
+    // 캠페인 미션 목록 조회
+    @Operation(summary = "캠페인 미션 목록 조회")
+    @GetMapping("/{campaignId}/missions")
+    public ResponseEntity<?> getCampaignMissions(@PathVariable Long campaignId) {
+        List<Mission> missions = missionService.getMissionsByCampaignId(campaignId);
+        return ResponseEntity.ok(
+                CommonResponse.success("캠페인 미션 목록 조회 성공", missions)
         );
     }
 }
