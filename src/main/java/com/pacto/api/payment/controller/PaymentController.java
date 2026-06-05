@@ -1,0 +1,54 @@
+package com.pacto.api.payment.controller;
+
+import com.pacto.api.common.response.CommonResponse;
+import com.pacto.api.payment.dto.PaymentCreateRequest;
+import com.pacto.api.payment.dto.PaymentResponse;
+import com.pacto.api.payment.dto.PaymentVerifyRequest;
+import com.pacto.api.payment.service.PaymentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Tag(name = "Payment", description = "포트원 결제 요청 및 검증 API")
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/v1/payments")
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    @Operation(summary = "결제 요청 생성", description = "JWT의 userId로 결제 요청을 생성하고 merchantUid를 발급합니다.")
+    @ApiResponse(responseCode = "201", content = @Content(schema = @Schema(implementation = PaymentResponse.class)))
+    @PostMapping
+    public ResponseEntity<CommonResponse<PaymentResponse>> createPayment(
+            Authentication authentication,
+            @RequestBody PaymentCreateRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(CommonResponse.success("결제 요청 생성 성공", paymentService.createPayment(userId, request)));
+    }
+
+    @Operation(summary = "결제 검증 요청", description = "클라이언트가 전달한 merchantUid와 impUid로 결제 검증을 요청합니다.")
+    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = PaymentResponse.class)))
+    @PostMapping("/verify")
+    public ResponseEntity<CommonResponse<PaymentResponse>> verifyPayment(
+            Authentication authentication,
+            @RequestBody PaymentVerifyRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(
+                CommonResponse.success("결제 검증 요청 성공", paymentService.verifyPayment(userId, request))
+        );
+    }
+}

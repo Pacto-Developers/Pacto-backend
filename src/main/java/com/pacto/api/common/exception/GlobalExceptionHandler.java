@@ -46,6 +46,30 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<?> handlePaymentNotFound(PaymentNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentAlreadyProcessedException.class)
+    public ResponseEntity<?> handlePaymentAlreadyProcessed(PaymentAlreadyProcessedException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentVerificationException.class)
+    public ResponseEntity<?> handlePaymentVerification(PaymentVerificationException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(PortOneApiException.class)
+    public ResponseEntity<?> handlePortOneApiException(PortOneApiException e) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(InvalidEscrowStateException.class)
     public ResponseEntity<?> handleInvalidEscrowState(InvalidEscrowStateException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
