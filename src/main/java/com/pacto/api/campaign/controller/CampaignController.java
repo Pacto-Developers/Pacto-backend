@@ -30,6 +30,7 @@ public class CampaignController {
     private final CampaignService campaignService;
     private final MissionService missionService;
 
+
     @Operation(summary = "캠페인 목록 조회")
     @GetMapping
     public ResponseEntity<?> getCampaigns(
@@ -73,20 +74,6 @@ public class CampaignController {
                 CommonResponse.success("캠페인 상태 변경 성공", Map.of(
                         "campaign_id", campaign.getCampaignId(),
                         "status", campaign.getStatus()
-                ))
-        );
-    }
-
-    @Operation(summary = "미션 수락")
-    @PostMapping("/{campaignId}/missions")
-    public ResponseEntity<?> acceptMission(@PathVariable Long campaignId) {
-        Long bloggerId = (Long) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-        Mission mission = missionService.acceptMission(campaignId, bloggerId);
-        return ResponseEntity.status(201).body(
-                CommonResponse.success("미션 수락 성공", Map.of(
-                        "mission_id", mission.getMissionId(),
-                        "status", mission.getStatus()
                 ))
         );
     }

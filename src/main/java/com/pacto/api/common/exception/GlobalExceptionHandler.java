@@ -4,11 +4,19 @@ import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.escrow.exception.InvalidEscrowStateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDenied(AccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(CommonResponse.failure("접근 권한이 없습니다."));
+    }
 
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<?> handleDuplicateEmail(DuplicateEmailException e) {
@@ -102,6 +110,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidMissionStatusException.class)
     public ResponseEntity<?> handleInvalidMissionStatus(InvalidMissionStatusException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(ApplicationNotFoundException.class)
+    public ResponseEntity<?> handleApplicationNotFound(ApplicationNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidApplicationStatusException.class)
+    public ResponseEntity<?> handleInvalidApplicationStatus(InvalidApplicationStatusException e) {
         return ResponseEntity.badRequest()
                 .body(CommonResponse.failure(e.getMessage()));
     }
