@@ -30,6 +30,24 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidRoleException.class)
+    public ResponseEntity<?> handleInvalidRole(InvalidRoleException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(MissingRoleException.class)
+    public ResponseEntity<?> handleMissingRole(MissingRoleException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(RoleMismatchException.class)
+    public ResponseEntity<?> handleRoleMismatch(RoleMismatchException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler({EmailNotFoundException.class, UserNotFoundException.class})
     public ResponseEntity<?> handleAuthNotFound(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)

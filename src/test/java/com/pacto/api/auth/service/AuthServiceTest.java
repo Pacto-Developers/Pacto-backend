@@ -9,6 +9,8 @@ import com.pacto.api.auth.repository.UserRepository;
 import com.pacto.api.common.exception.DuplicateEmailException;
 import com.pacto.api.common.exception.EmailNotFoundException;
 import com.pacto.api.common.exception.InvalidPasswordException;
+import com.pacto.api.common.exception.MissingRoleException;
+import com.pacto.api.common.exception.RoleMismatchException;
 import com.pacto.api.common.exception.UserNotFoundException;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.WalletRepository;
@@ -42,6 +44,7 @@ class AuthServiceTest {
         SignupRequest request = new SignupRequest();
         ReflectionTestUtils.setField(request, "email", "test@test.com");
         ReflectionTestUtils.setField(request, "password", "password");
+        ReflectionTestUtils.setField(request, "role", "BLOGGER");
 
         when(userRepository.existsByEmail("test@test.com")).thenReturn(false);
         when(passwordEncoder.encode("password")).thenReturn("encoded");
@@ -62,6 +65,7 @@ class AuthServiceTest {
         SignupRequest request = new SignupRequest();
         ReflectionTestUtils.setField(request, "email", "dup@test.com");
         ReflectionTestUtils.setField(request, "password", "password");
+        ReflectionTestUtils.setField(request, "role", "BLOGGER");
 
         when(userRepository.existsByEmail("dup@test.com")).thenReturn(true);
 
@@ -77,6 +81,7 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         ReflectionTestUtils.setField(request, "email", "missing@test.com");
         ReflectionTestUtils.setField(request, "password", "password");
+        ReflectionTestUtils.setField(request, "role", "BLOGGER");
 
         when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
 
@@ -90,6 +95,7 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         ReflectionTestUtils.setField(request, "email", "test@test.com");
         ReflectionTestUtils.setField(request, "password", "wrong");
+        ReflectionTestUtils.setField(request, "role", "BLOGGER");
 
         User user = User.builder()
                 .userId(1L).email("test@test.com").password("encoded").role(Role.BLOGGER).build();
@@ -99,6 +105,60 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(InvalidPasswordException.class)
                 .hasMessage("비밀번호가 일치하지 않습니다.");
+    }
+
+    @Test
+    void login_요청_role과_유저_role이_다르면_예외() {
+        LoginRequest request = new LoginRequest();
+        ReflectionTestUtils.setField(request, "email", "test@test.com");
+        ReflectionTestUtils.setField(request, "password", "password");
+        ReflectionTestUtils.setField(request, "role", "ADVERTISER");
+
+        User user = User.builder()
+                .userId(1L).email("test@test.com").password("encoded").role(Role.BLOGGER).build();
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "encoded")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(RoleMismatchException.class)
+                .hasMessage("로그인 role이 일치하지 않습니다.");
+    }
+
+    @Test
+    void login_role이_없으면_예외() {
+        LoginRequest request = new LoginRequest();
+        ReflectionTestUtils.setField(request, "email", "test@test.com");
+        ReflectionTestUtils.setField(request, "password", "password");
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(MissingRoleException.class)
+                .hasMessage("role은 필수입니다.");
+    }
+
+    @Test
+    void signup_요청_role로_유저를_생성한다() {
+        SignupRequest request = new SignupRequest();
+        ReflectionTestUtils.setField(request, "email", "advertiser@test.com");
+        ReflectionTestUtils.setField(request, "password", "password");
+        ReflectionTestUtils.setField(request, "role", "ADVERTISER");
+
+        when(userRepository.existsByEmail("advertiser@test.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            return User.builder()
+                    .userId(1L)
+                    .email(user.getEmail())
+                    .password(user.getPassword())
+                    .role(user.getRole())
+                    .build();
+        });
+
+        authService.signup(request);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.ADVERTISER);
     }
 
     @Test
