@@ -3,6 +3,7 @@ package com.pacto.api.payment.service;
 import com.pacto.api.common.exception.PaymentAlreadyProcessedException;
 import com.pacto.api.common.exception.PaymentNotFoundException;
 import com.pacto.api.common.exception.PaymentVerificationException;
+import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.payment.client.PortOneClient;
 import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
@@ -11,6 +12,11 @@ import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.entity.PaymentStatus;
 import com.pacto.api.payment.repository.PaymentRepository;
+import com.pacto.api.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistoryType;
+import com.pacto.api.wallet.entity.Wallet;
+import com.pacto.api.wallet.repository.PointHistoryRepository;
+import com.pacto.api.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +29,8 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final PortOneClient portOneClient;
+    private final WalletRepository walletRepository;
+    private final PointHistoryRepository pointHistoryRepository;
 
     @Transactional
     public PaymentResponse createPayment(Long userId, PaymentCreateRequest request) {
@@ -41,6 +49,7 @@ public class PaymentService {
         PortOnePaymentResponse portOnePayment = portOneClient.getPayment(request.getImpUid());
         validatePortOnePayment(payment, request, portOnePayment);
 
+        chargeWallet(payment);
         payment.markPaid(portOnePayment.impUid());
         return PaymentResponse.from(payment);
     }
@@ -75,5 +84,19 @@ public class PaymentService {
 
     private String generateMerchantUid() {
         return "payment_" + UUID.randomUUID();
+    }
+
+    private void chargeWallet(Payment payment) {
+        Wallet wallet = walletRepository.findByUserId(payment.getUserId())
+                .orElseThrow(WalletNotFoundException::new);
+
+        wallet.addBalance(payment.getAmount());
+        walletRepository.save(wallet);
+        pointHistoryRepository.save(PointHistory.create(
+                wallet,
+                payment.getAmount(),
+                PointHistoryType.CHARGE,
+                payment.getPaymentId()
+        ));
     }
 }

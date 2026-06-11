@@ -3,6 +3,7 @@ package com.pacto.api.payment.service;
 import com.pacto.api.common.exception.PaymentAlreadyProcessedException;
 import com.pacto.api.common.exception.PaymentNotFoundException;
 import com.pacto.api.common.exception.PaymentVerificationException;
+import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.payment.client.PortOneClient;
 import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
@@ -11,6 +12,11 @@ import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.entity.PaymentStatus;
 import com.pacto.api.payment.repository.PaymentRepository;
+import com.pacto.api.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistoryType;
+import com.pacto.api.wallet.entity.Wallet;
+import com.pacto.api.wallet.repository.PointHistoryRepository;
+import com.pacto.api.wallet.repository.WalletRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -34,6 +40,8 @@ class PaymentServiceTest {
 
     @Mock PaymentRepository paymentRepository;
     @Mock PortOneClient portOneClient;
+    @Mock WalletRepository walletRepository;
+    @Mock PointHistoryRepository pointHistoryRepository;
     @InjectMocks PaymentService paymentService;
 
     @Test
@@ -57,12 +65,15 @@ class PaymentServiceTest {
     @Test
     void 결제_검증_성공시_PAID_상태로_변경한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        ReflectionTestUtils.setField(payment, "paymentId", 10L);
+        Wallet wallet = Wallet.create(1L);
         PaymentVerifyRequest request = new PaymentVerifyRequest();
         ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
         ReflectionTestUtils.setField(request, "impUid", "imp-1");
         when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
         when(portOneClient.getPayment("imp-1"))
                 .thenReturn(new PortOnePaymentResponse("imp-1", "payment-1", 10000, "paid"));
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
 
         PaymentResponse response = paymentService.verifyPayment(1L, request);
 
@@ -70,6 +81,15 @@ class PaymentServiceTest {
         assertThat(response.getImpUid()).isEqualTo("imp-1");
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.PAID);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(wallet.getBalance()).isEqualTo(10000);
+
+        ArgumentCaptor<PointHistory> historyCaptor = ArgumentCaptor.forClass(PointHistory.class);
+        verify(walletRepository).save(wallet);
+        verify(pointHistoryRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getWallet()).isEqualTo(wallet);
+        assertThat(historyCaptor.getValue().getAmount()).isEqualTo(10000);
+        assertThat(historyCaptor.getValue().getType()).isEqualTo(PointHistoryType.CHARGE);
+        assertThat(historyCaptor.getValue().getReferenceId()).isEqualTo(10L);
     }
 
     @Test
@@ -169,5 +189,24 @@ class PaymentServiceTest {
 
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
         verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void 결제_검증_성공시_지갑이_없으면_충전하지_않고_실패한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        PaymentVerifyRequest request = new PaymentVerifyRequest();
+        ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
+        ReflectionTestUtils.setField(request, "impUid", "imp-1");
+        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(portOneClient.getPayment("imp-1"))
+                .thenReturn(new PortOnePaymentResponse("imp-1", "payment-1", 10000, "paid"));
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.verifyPayment(1L, request))
+                .isInstanceOf(WalletNotFoundException.class)
+                .hasMessage("지갑을 찾을 수 없습니다.");
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
+        verify(pointHistoryRepository, never()).save(any());
     }
 }
