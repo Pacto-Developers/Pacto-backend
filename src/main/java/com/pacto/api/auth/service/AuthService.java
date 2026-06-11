@@ -11,6 +11,7 @@ import com.pacto.api.auth.repository.UserRepository;
 import com.pacto.api.common.exception.DuplicateEmailException;
 import com.pacto.api.common.exception.EmailNotFoundException;
 import com.pacto.api.common.exception.InvalidPasswordException;
+import com.pacto.api.common.exception.RoleMismatchException;
 import com.pacto.api.common.exception.UserNotFoundException;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.WalletRepository;
@@ -34,10 +35,12 @@ public class AuthService {
             throw new DuplicateEmailException();
         }
 
+        Role role = Role.from(request.getRole());
+
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.BLOGGER)
+                .role(role)
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -47,11 +50,17 @@ public class AuthService {
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
 
+        Role loginRole = Role.from(request.getRole());
+
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(EmailNotFoundException::new);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidPasswordException();
+        }
+
+        if (user.getRole() != loginRole) {
+            throw new RoleMismatchException();
         }
 
         String accessToken = jwtProvider.createToken(
