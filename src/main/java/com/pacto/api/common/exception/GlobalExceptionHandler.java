@@ -125,4 +125,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(CommonResponse.failure(e.getMessage()));
     }
+
+    @ExceptionHandler(ApplicationAccessDeniedException.class)
+    public ResponseEntity<?> handleApplicationAccessDenied(ApplicationAccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(CampaignNotOpenException.class)
+    public ResponseEntity<?> handleCampaignNotOpen(CampaignNotOpenException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
 }

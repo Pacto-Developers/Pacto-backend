@@ -16,6 +16,13 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             "WHERE a.campaignId = :campaignId")
     List<ApplicationResponse> findByCampaignIdWithBloggerEmail(@Param("campaignId") Long campaignId);
 
+    @Query("SELECT new com.pacto.api.application.dto.ApplicationResponse(" +
+            "a.applicationId, a.campaignId, a.bloggerId, u.email, a.status, a.createdAt, a.updatedAt) " +
+            "FROM Application a JOIN User u ON a.bloggerId = u.userId " +
+            "WHERE a.campaignId = :campaignId AND a.status = :status")
+    List<ApplicationResponse> findByCampaignIdAndStatusWithBloggerEmail(@Param("campaignId") Long campaignId,
+                                                                         @Param("status") ApplicationStatus status);
+
     List<Application> findByCampaignId(Long campaignId);
     List<Application> findByBloggerId(Long bloggerId);
     List<Application> findByCampaignIdAndStatus(Long campaignId, ApplicationStatus status);
