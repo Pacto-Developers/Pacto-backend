@@ -23,7 +23,10 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     List<ApplicationResponse> findByCampaignIdAndStatusWithBloggerEmail(@Param("campaignId") Long campaignId,
                                                                          @Param("status") ApplicationStatus status);
 
+    boolean existsByCampaignIdAndBloggerIdAndStatusIn(Long campaignId, Long bloggerId, List<ApplicationStatus> statuses);
+
     List<Application> findByCampaignId(Long campaignId);
     List<Application> findByBloggerId(Long bloggerId);
+    List<Application> findByBloggerIdAndStatus(Long bloggerId, ApplicationStatus status);
     List<Application> findByCampaignIdAndStatus(Long campaignId, ApplicationStatus status);
 }

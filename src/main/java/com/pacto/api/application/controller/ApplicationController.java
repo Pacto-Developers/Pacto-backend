@@ -78,10 +78,10 @@ public class ApplicationController {
 
     @Operation(summary = "내 지원 목록 조회 (블로거)")
     @GetMapping("/me")
-    public ResponseEntity<?> getMyApplications() {
+    public ResponseEntity<?> getMyApplications(@RequestParam(required = false) ApplicationStatus status) {
         Long bloggerId = (Long) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
-        List<Application> applications = applicationService.getMyApplications(bloggerId);
+        List<Application> applications = applicationService.getMyApplications(bloggerId, status);
         return ResponseEntity.ok(CommonResponse.success("내 지원 목록 조회 성공", applications));
     }
 }

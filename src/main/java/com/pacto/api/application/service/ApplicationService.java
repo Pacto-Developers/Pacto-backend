@@ -11,6 +11,7 @@ import com.pacto.api.common.exception.ApplicationAccessDeniedException;
 import com.pacto.api.common.exception.ApplicationNotFoundException;
 import com.pacto.api.common.exception.CampaignNotFoundException;
 import com.pacto.api.common.exception.CampaignNotOpenException;
+import com.pacto.api.common.exception.DuplicateApplicationException;
 import com.pacto.api.escrow.service.EscrowLockService;
 import com.pacto.api.mission.service.MissionService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,10 @@ public class ApplicationService {
                 .orElseThrow(CampaignNotFoundException::new);
         if (campaign.getStatus() != CampaignStatus.RECRUITING) {
             throw new CampaignNotOpenException();
+        }
+        if (applicationRepository.existsByCampaignIdAndBloggerIdAndStatusIn(
+                campaignId, bloggerId, Arrays.asList(ApplicationStatus.PENDING, ApplicationStatus.ACCEPTED))) {
+            throw new DuplicateApplicationException();
         }
         Application application = new Application(campaignId, bloggerId);
         return applicationRepository.save(application);
@@ -81,7 +87,10 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public List<Application> getMyApplications(Long bloggerId) {
+    public List<Application> getMyApplications(Long bloggerId, ApplicationStatus status) {
+        if (status != null) {
+            return applicationRepository.findByBloggerIdAndStatus(bloggerId, status);
+        }
         return applicationRepository.findByBloggerId(bloggerId);
     }
 }
