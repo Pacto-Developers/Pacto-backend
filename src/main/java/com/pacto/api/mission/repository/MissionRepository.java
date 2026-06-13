@@ -10,4 +10,6 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     List<Mission> findByBloggerIdAndStatus(Long bloggerId, MissionStatus status);
     List<Mission> findByBloggerId(Long bloggerId);
     List<Mission> findByCampaignId(Long campaignId);
+    List<Mission> findByCampaignIdInAndStatus(List<Long> campaignIds, MissionStatus status);
+    long countByCampaignIdInAndStatus(List<Long> campaignIds, MissionStatus status);
 }
