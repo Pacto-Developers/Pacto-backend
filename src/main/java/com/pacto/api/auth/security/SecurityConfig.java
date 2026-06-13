@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/campaigns").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/campaigns/{campaignId}").permitAll()
                         .requestMatchers("/api/v1/wallets/**").hasAnyRole("BLOGGER", "ADVERTISER")
+                        .requestMatchers("/api/v1/advertiser/**").hasRole("ADVERTISER")
                         .anyRequest().authenticated()
                 )
 
