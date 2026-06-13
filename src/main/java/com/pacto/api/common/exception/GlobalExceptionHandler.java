@@ -60,6 +60,12 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidChargeAmountException.class)
+    public ResponseEntity<?> handleInvalidChargeAmount(InvalidChargeAmountException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(WalletNotFoundException.class)
     public ResponseEntity<?> handleWalletNotFound(WalletNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
