@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,7 +42,7 @@ class EscrowLockServiceTest {
 
     @Test
     void lock은_광고주_잔액을_에스크로로_잠그고_escrowId를_반환한다() {
-        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, "{}", LocalDateTime.now());
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 1);
         Wallet advertiserWallet = Wallet.create(1L);
         ReflectionTestUtils.setField(advertiserWallet, "walletId", 100L);
         ReflectionTestUtils.setField(advertiserWallet, "balance", 100000);
@@ -80,7 +81,7 @@ class EscrowLockServiceTest {
 
     @Test
     void lock은_광고주_잔액이_부족하면_에스크로를_생성하지_않는다() {
-        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, "{}", LocalDateTime.now());
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 1);
         Wallet advertiserWallet = Wallet.create(1L);
         ReflectionTestUtils.setField(advertiserWallet, "walletId", 100L);
         ReflectionTestUtils.setField(advertiserWallet, "balance", 30000);

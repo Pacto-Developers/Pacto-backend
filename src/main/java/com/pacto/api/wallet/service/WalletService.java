@@ -2,6 +2,7 @@ package com.pacto.api.wallet.service;
 
 import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.exception.InsufficientBalanceException;
+import com.pacto.api.common.exception.InvalidChargeAmountException;
 import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.wallet.dto.PointHistoryResponse;
 import com.pacto.api.wallet.dto.WalletResponse;
@@ -74,5 +75,24 @@ public class WalletService {
         ));
 
         return WithdrawResponse.from(savedWithdrawal, wallet.getBalance());
+    }
+
+    @Transactional
+    public void chargeByPayment(Long userId, int amount, Long paymentId) {
+        if (amount <= 0) {
+            throw new InvalidChargeAmountException();
+        }
+
+        Wallet wallet = walletRepository.findByUserId(userId)
+                .orElseThrow(WalletNotFoundException::new);
+
+        wallet.addBalance(amount);
+        walletRepository.save(wallet);
+        pointHistoryRepository.save(PointHistory.create(
+                wallet,
+                amount,
+                PointHistoryType.CHARGE,
+                paymentId
+        ));
     }
 }

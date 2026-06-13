@@ -1,6 +1,7 @@
 package com.pacto.api.wallet.service;
 
 import com.pacto.api.common.exception.InsufficientBalanceException;
+import com.pacto.api.common.exception.InvalidChargeAmountException;
 import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.wallet.dto.PointHistoryResponse;
@@ -149,5 +150,47 @@ class WalletServiceTest {
                 .hasMessage("잔액이 부족합니다.");
 
         verify(withdrawalRepository, never()).save(any());
+    }
+
+    @Test
+    void 결제충전_성공() {
+        ReflectionTestUtils.setField(wallet, "balance", 10000);
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+
+        walletService.chargeByPayment(1L, 30000, 7L);
+
+        assertThat(wallet.getBalance()).isEqualTo(40000);
+        verify(walletRepository).save(wallet);
+
+        ArgumentCaptor<PointHistory> historyCaptor = ArgumentCaptor.forClass(PointHistory.class);
+        verify(pointHistoryRepository).save(historyCaptor.capture());
+        PointHistory history = historyCaptor.getValue();
+        assertThat(history.getWallet()).isSameAs(wallet);
+        assertThat(history.getAmount()).isEqualTo(30000);
+        assertThat(history.getType()).isEqualTo(PointHistoryType.CHARGE);
+        assertThat(history.getReferenceId()).isEqualTo(7L);
+    }
+
+    @Test
+    void 결제충전_지갑이_없으면_WalletNotFoundException() {
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> walletService.chargeByPayment(1L, 30000, 7L))
+                .isInstanceOf(WalletNotFoundException.class)
+                .hasMessage("지갑을 찾을 수 없습니다.");
+
+        verify(walletRepository, never()).save(any());
+        verify(pointHistoryRepository, never()).save(any());
+    }
+
+    @Test
+    void 결제충전_금액이_0이하면_InvalidChargeAmountException() {
+        assertThatThrownBy(() -> walletService.chargeByPayment(1L, 0, 7L))
+                .isInstanceOf(InvalidChargeAmountException.class)
+                .hasMessage("충전 금액은 0보다 커야 합니다.");
+
+        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository, never()).save(any());
+        verify(pointHistoryRepository, never()).save(any());
     }
 }

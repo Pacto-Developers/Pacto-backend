@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +46,7 @@ class EscrowSettlementServiceTest {
     void release는_블로거_잔액을_증가시키고_광고주_잠금잔액을_감소시킨다() {
         EscrowLedger escrow = EscrowLedger.create(10L, 42L, 50000);
         ReflectionTestUtils.setField(escrow, "escrowId", 505L);
-        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, "{}", LocalDateTime.now());
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 1);
         Wallet advertiserWallet = Wallet.create(1L);
         ReflectionTestUtils.setField(advertiserWallet, "walletId", 100L);
         ReflectionTestUtils.setField(advertiserWallet, "lockedBalance", 50000);
@@ -79,7 +80,7 @@ class EscrowSettlementServiceTest {
     void cancel은_광고주_가용잔액을_복구하고_잠금잔액을_감소시킨다() {
         EscrowLedger escrow = EscrowLedger.create(10L, 42L, 50000);
         ReflectionTestUtils.setField(escrow, "escrowId", 505L);
-        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, "{}", LocalDateTime.now());
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 1);
         Wallet advertiserWallet = Wallet.create(1L);
         ReflectionTestUtils.setField(advertiserWallet, "walletId", 100L);
         ReflectionTestUtils.setField(advertiserWallet, "balance", 100000);
