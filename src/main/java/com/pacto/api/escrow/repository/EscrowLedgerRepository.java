@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface EscrowLedgerRepository extends JpaRepository<EscrowLedger, Long> {
     List<EscrowLedger> findByCampaignId(Long campaignId);
+    List<EscrowLedger> findByCampaignIdIn(List<Long> campaignIds);
     List<EscrowLedger> findByBloggerId(Long bloggerId);
     List<EscrowLedger> findByCampaignIdAndStatus(Long campaignId, EscrowStatus status);
     Page<EscrowLedger> findByBloggerId(Long bloggerId, Pageable pageable);

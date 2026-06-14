@@ -11,6 +11,7 @@ import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.entity.PaymentStatus;
 import com.pacto.api.payment.repository.PaymentRepository;
+import com.pacto.api.wallet.service.WalletService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -34,6 +35,7 @@ class PaymentServiceTest {
 
     @Mock PaymentRepository paymentRepository;
     @Mock PortOneClient portOneClient;
+    @Mock WalletService walletService;
     @InjectMocks PaymentService paymentService;
 
     @Test
@@ -55,8 +57,9 @@ class PaymentServiceTest {
     }
 
     @Test
-    void 결제_검증_성공시_PAID_상태로_변경한다() {
+    void 결제_검증_성공시_PAID_상태로_변경하고_지갑을_충전한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        ReflectionTestUtils.setField(payment, "paymentId", 7L);
         PaymentVerifyRequest request = new PaymentVerifyRequest();
         ReflectionTestUtils.setField(request, "merchantUid", "payment-1");
         ReflectionTestUtils.setField(request, "impUid", "imp-1");
@@ -70,6 +73,7 @@ class PaymentServiceTest {
         assertThat(response.getImpUid()).isEqualTo("imp-1");
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.PAID);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
+        verify(walletService).chargeByPayment(1L, 10000, 7L);
     }
 
     @Test
@@ -100,6 +104,7 @@ class PaymentServiceTest {
                 .hasMessage("이미 처리된 결제입니다.");
 
         verifyNoInteractions(portOneClient);
+        verifyNoInteractions(walletService);
     }
 
     @Test
@@ -117,6 +122,7 @@ class PaymentServiceTest {
                 .hasMessage("결제 요청 번호가 일치하지 않습니다.");
 
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
+        verifyNoInteractions(walletService);
     }
 
     @Test
@@ -134,6 +140,7 @@ class PaymentServiceTest {
                 .hasMessage("결제 금액이 일치하지 않습니다.");
 
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
+        verifyNoInteractions(walletService);
     }
 
     @Test
@@ -151,6 +158,7 @@ class PaymentServiceTest {
                 .hasMessage("결제가 완료되지 않았습니다.");
 
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
+        verifyNoInteractions(walletService);
     }
 
     @Test
@@ -169,5 +177,6 @@ class PaymentServiceTest {
 
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
         verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(walletService);
     }
 }
