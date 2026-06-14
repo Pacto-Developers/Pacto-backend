@@ -11,6 +11,7 @@ import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.entity.PaymentStatus;
 import com.pacto.api.payment.repository.PaymentRepository;
+import com.pacto.api.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final PortOneClient portOneClient;
+    private final WalletService walletService;
 
     @Transactional
     public PaymentResponse createPayment(Long userId, PaymentCreateRequest request) {
@@ -42,6 +44,7 @@ public class PaymentService {
         validatePortOnePayment(payment, request, portOnePayment);
 
         payment.markPaid(portOnePayment.impUid());
+        walletService.chargeByPayment(payment.getUserId(), payment.getAmount(), payment.getPaymentId());
         return PaymentResponse.from(payment);
     }
 
