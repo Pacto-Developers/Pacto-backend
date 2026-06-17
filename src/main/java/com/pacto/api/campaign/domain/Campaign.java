@@ -1,6 +1,7 @@
 package com.pacto.api.campaign.domain;
 
 import com.pacto.api.common.exception.CampaignSlotFullException;
+import com.pacto.api.common.exception.InvalidCampaignStatusException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -68,6 +69,33 @@ public class Campaign {
     // 상태 변경
     public void updateStatus(CampaignStatus status) {
         this.status = status;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void close() {
+        if (this.status != CampaignStatus.RECRUITING) {
+            throw new InvalidCampaignStatusException("모집 중인 캠페인만 진행 중으로 전환할 수 있습니다.");
+        }
+        this.status = CampaignStatus.IN_PROGRESS;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void complete() {
+        if (this.status != CampaignStatus.IN_PROGRESS) {
+            throw new InvalidCampaignStatusException("진행 중인 캠페인만 완료 처리할 수 있습니다.");
+        }
+        this.status = CampaignStatus.COMPLETED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void cancel() {
+        if (this.status == CampaignStatus.CANCELLED) {
+            throw new InvalidCampaignStatusException("이미 취소된 캠페인입니다.");
+        }
+        if (this.status != CampaignStatus.RECRUITING && this.status != CampaignStatus.IN_PROGRESS) {
+            throw new InvalidCampaignStatusException("모집 중 또는 진행 중인 캠페인만 취소할 수 있습니다.");
+        }
+        this.status = CampaignStatus.CANCELLED;
         this.updatedAt = LocalDateTime.now();
     }
 

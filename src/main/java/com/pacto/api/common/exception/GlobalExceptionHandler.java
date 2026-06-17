@@ -167,4 +167,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(CommonResponse.failure(e.getMessage()));
     }
+
+    @ExceptionHandler(InvalidCampaignStatusException.class)
+    public ResponseEntity<?> handleInvalidCampaignStatus(InvalidCampaignStatusException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
 }
