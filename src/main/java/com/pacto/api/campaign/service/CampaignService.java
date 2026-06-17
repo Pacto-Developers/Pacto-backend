@@ -1,5 +1,8 @@
 package com.pacto.api.campaign.service;
 
+import com.pacto.api.application.domain.Application;
+import com.pacto.api.application.domain.ApplicationStatus;
+import com.pacto.api.application.repository.ApplicationRepository;
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.dto.CampaignRequestDto;
@@ -11,11 +14,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CampaignService {
 
     private final CampaignRepository campaignRepository;
+    private final ApplicationRepository applicationRepository;
 
     // 캠페인 목록 조회
     @Transactional(readOnly = true)
@@ -55,5 +61,36 @@ public class CampaignService {
                 .orElseThrow(() -> new CampaignNotFoundException());
         campaign.updateStatus(status);
         return campaignRepository.save(campaign);
+    }
+
+    @Transactional
+    public Campaign closeCampaign(Long campaignId) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(CampaignNotFoundException::new);
+        campaign.close();
+        rejectPendingApplications(campaignId);
+        return campaign;
+    }
+
+    @Transactional
+    public Campaign completeCampaign(Long campaignId) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(CampaignNotFoundException::new);
+        campaign.complete();
+        return campaign;
+    }
+
+    @Transactional
+    public Campaign cancelCampaign(Long campaignId) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(CampaignNotFoundException::new);
+        campaign.cancel();
+        rejectPendingApplications(campaignId);
+        return campaign;
+    }
+
+    private void rejectPendingApplications(Long campaignId) {
+        List<Application> pending = applicationRepository.findByCampaignIdAndStatus(campaignId, ApplicationStatus.PENDING);
+        pending.forEach(Application::reject);
     }
 }
