@@ -1,11 +1,13 @@
 package com.pacto.api.payment.service;
 
 import com.pacto.api.common.exception.PaymentAlreadyProcessedException;
+import com.pacto.api.common.exception.InvalidPaymentPageRequestException;
 import com.pacto.api.common.exception.PaymentNotFoundException;
 import com.pacto.api.common.exception.PaymentVerificationException;
 import com.pacto.api.payment.client.PortOneClient;
 import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
+import com.pacto.api.payment.dto.PaymentDetailResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.entity.Payment;
@@ -18,8 +20,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,6 +59,61 @@ class PaymentServiceTest {
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(paymentCaptor.capture());
         assertThat(paymentCaptor.getValue().getUserId()).isEqualTo(1L);
+    }
+
+    @Test
+    void 내_결제_내역을_최신순으로_페이지_조회한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        when(paymentRepository.findByUserId(org.mockito.ArgumentMatchers.eq(1L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(payment)));
+
+        var response = paymentService.getMyPayments(1L, 1, 20);
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().get(0).getMerchantUid()).isEqualTo("payment-1");
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(paymentRepository).findByUserId(org.mockito.ArgumentMatchers.eq(1L), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(20);
+        assertThat(pageableCaptor.getValue().getSort().getOrderFor("createdAt").getDirection())
+                .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
+    }
+
+    @Test
+    void 잘못된_결제_내역_페이지_요청은_예외가_발생한다() {
+        assertThatThrownBy(() -> paymentService.getMyPayments(1L, 0, 20))
+                .isInstanceOf(InvalidPaymentPageRequestException.class)
+                .hasMessage("페이지는 1 이상이고, 페이지 크기는 1 이상 100 이하여야 합니다.");
+        assertThatThrownBy(() -> paymentService.getMyPayments(1L, 1, 101))
+                .isInstanceOf(InvalidPaymentPageRequestException.class);
+
+        verifyNoInteractions(paymentRepository);
+    }
+
+    @Test
+    void 본인의_결제_상세를_조회한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        ReflectionTestUtils.setField(payment, "paymentId", 7L);
+        payment.markPaid("imp-1");
+        when(paymentRepository.findById(7L)).thenReturn(Optional.of(payment));
+
+        PaymentDetailResponse response = paymentService.getMyPayment(1L, 7L);
+
+        assertThat(response.getPaymentId()).isEqualTo(7L);
+        assertThat(response.getMerchantUid()).isEqualTo("payment-1");
+        assertThat(response.getImpUid()).isEqualTo("imp-1");
+        assertThat(response.getAmount()).isEqualTo(10000);
+        assertThat(response.getStatus()).isEqualTo(PaymentStatus.PAID);
+    }
+
+    @Test
+    void 다른_사용자의_결제_상세는_조회할_수_없다() {
+        Payment payment = Payment.createReady(2L, "payment-1", 10000);
+        when(paymentRepository.findById(7L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.getMyPayment(1L, 7L))
+                .isInstanceOf(PaymentNotFoundException.class)
+                .hasMessage("결제 요청을 찾을 수 없습니다.");
     }
 
     @Test

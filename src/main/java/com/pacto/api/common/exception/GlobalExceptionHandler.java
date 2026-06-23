@@ -96,6 +96,12 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidPaymentPageRequestException.class)
+    public ResponseEntity<?> handleInvalidPaymentPageRequest(InvalidPaymentPageRequestException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(PortOneApiException.class)
     public ResponseEntity<?> handlePortOneApiException(PortOneApiException e) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
