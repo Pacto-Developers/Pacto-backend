@@ -1,5 +1,6 @@
 package com.pacto.api.payment.service;
 
+import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.exception.PaymentAlreadyProcessedException;
 import com.pacto.api.common.exception.PaymentNotFoundException;
 import com.pacto.api.common.exception.PaymentVerificationException;
@@ -13,6 +14,8 @@ import com.pacto.api.payment.entity.PaymentStatus;
 import com.pacto.api.payment.repository.PaymentRepository;
 import com.pacto.api.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,19 @@ public class PaymentService {
     public PaymentResponse createPayment(Long userId, PaymentCreateRequest request) {
         Payment payment = Payment.createReady(userId, generateMerchantUid(), request.getAmount());
         return PaymentResponse.from(paymentRepository.save(payment));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<PaymentResponse> getMyPayments(Long userId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(
+                Math.max(page, 1) - 1,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        return PageResponse.from(
+                paymentRepository.findByUserId(userId, pageRequest),
+                PaymentResponse::from
+        );
     }
 
     @Transactional

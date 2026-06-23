@@ -1,5 +1,6 @@
 package com.pacto.api.payment.controller;
 
+import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentResponse;
@@ -14,10 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Payment", description = "포트원 결제 요청 및 검증 API")
 @RestController
@@ -26,6 +24,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final PaymentService paymentService;
+
+    @Operation(summary = "내 결제 내역 조회", description = "JWT의 userId로 결제 내역을 최신순으로 조회합니다.")
+    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = PaymentResponse.class)))
+    @GetMapping
+    public ResponseEntity<CommonResponse<PageResponse<PaymentResponse>>> getMyPayments(
+            Authentication authentication,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(
+                CommonResponse.success("결제 내역 조회 성공", paymentService.getMyPayments(userId, page, size))
+        );
+    }
 
     @Operation(summary = "결제 요청 생성", description = "JWT의 userId로 결제 요청을 생성하고 merchantUid를 발급합니다.")
     @ApiResponse(responseCode = "201", content = @Content(schema = @Schema(implementation = PaymentResponse.class)))

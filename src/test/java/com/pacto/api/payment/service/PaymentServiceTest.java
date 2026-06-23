@@ -18,8 +18,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,6 +57,24 @@ class PaymentServiceTest {
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(paymentCaptor.capture());
         assertThat(paymentCaptor.getValue().getUserId()).isEqualTo(1L);
+    }
+
+    @Test
+    void 내_결제_내역을_최신순으로_페이지_조회한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        when(paymentRepository.findByUserId(org.mockito.ArgumentMatchers.eq(1L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(payment)));
+
+        var response = paymentService.getMyPayments(1L, 1, 20);
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().get(0).getMerchantUid()).isEqualTo("payment-1");
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(paymentRepository).findByUserId(org.mockito.ArgumentMatchers.eq(1L), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(20);
+        assertThat(pageableCaptor.getValue().getSort().getOrderFor("createdAt").getDirection())
+                .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
     }
 
     @Test

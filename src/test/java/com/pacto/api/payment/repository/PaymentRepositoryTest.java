@@ -4,6 +4,8 @@ import com.pacto.api.payment.entity.Payment;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.util.Optional;
 
@@ -36,6 +38,21 @@ class PaymentRepositoryTest {
 
         assertThat(found).isPresent();
         assertThat(found.get().getMerchantUid()).isEqualTo("payment-1");
+    }
+
+    @Test
+    void 사용자별로_결제_내역을_조회한다() {
+        paymentRepository.save(Payment.createReady(1L, "payment-1", 10000));
+        paymentRepository.save(Payment.createReady(1L, "payment-2", 20000));
+        paymentRepository.save(Payment.createReady(2L, "payment-3", 30000));
+
+        var payments = paymentRepository.findByUserId(
+                1L,
+                PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
+
+        assertThat(payments.getContent()).hasSize(2);
+        assertThat(payments.getContent()).allMatch(payment -> payment.getUserId().equals(1L));
     }
 
     @Test
