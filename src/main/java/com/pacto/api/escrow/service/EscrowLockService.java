@@ -25,24 +25,56 @@ public class EscrowLockService {
     private final PointHistoryRepository pointHistoryRepository;
 
     @Transactional
-    public Long lock(Long campaignId, Long bloggerId) {
-        Campaign campaign = getCampaign(campaignId);
+    public void lockCampaignBudget(Campaign campaign) {
         Wallet advertiserWallet = getWallet(campaign.getAdvertiserId());
-        int amount = campaign.getRewardPoint();
+        int totalBudget = campaign.getRewardPoint() * campaign.getTotalSlots();
 
-        advertiserWallet.lockBalance(amount);
+        advertiserWallet.lockBalance(totalBudget);
         walletRepository.save(advertiserWallet);
+        pointHistoryRepository.save(PointHistory.create(
+                advertiserWallet,
+                -totalBudget,
+                PointHistoryType.LOCK,
+                campaign.getCampaignId()
+        ));
+    }
+
+    @Transactional
+    public Long createEscrowForSelection(Long campaignId, Long bloggerId) {
+        Campaign campaign = getCampaign(campaignId);
+        int amount = campaign.getRewardPoint();
 
         EscrowLedger escrow = EscrowLedger.create(campaignId, bloggerId, amount);
         EscrowLedger savedEscrow = escrowLedgerRepository.save(escrow);
+        return savedEscrow.getEscrowId();
+    }
+
+    @Transactional
+    public Long lock(Long campaignId, Long bloggerId) {
+        return createEscrowForSelection(campaignId, bloggerId);
+    }
+
+    @Transactional
+    public void refundUnusedBudget(Long campaignId) {
+        Campaign campaign = getCampaign(campaignId);
+        int unusedBudget = campaign.calculateRemainingBudget();
+        if (unusedBudget <= 0) {
+            return;
+        }
+
+        Wallet advertiserWallet = getWallet(campaign.getAdvertiserId());
+
+        advertiserWallet.refundLockedBalance(unusedBudget);
+        campaign.clearRemainingSlots();
+
+        walletRepository.save(advertiserWallet);
+        campaignRepository.save(campaign);
         pointHistoryRepository.save(PointHistory.create(
                 advertiserWallet,
-                -amount,
-                PointHistoryType.LOCK,
-                savedEscrow.getEscrowId()
+                unusedBudget,
+                PointHistoryType.REFUND,
+                campaign.getCampaignId()
         ));
-
-        return savedEscrow.getEscrowId();
     }
 
     private Campaign getCampaign(Long campaignId) {

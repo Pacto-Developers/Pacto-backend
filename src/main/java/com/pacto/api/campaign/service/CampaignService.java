@@ -8,6 +8,7 @@ import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.dto.CampaignRequestDto;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.common.exception.CampaignNotFoundException;
+import com.pacto.api.escrow.service.EscrowLockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ public class CampaignService {
 
     private final CampaignRepository campaignRepository;
     private final ApplicationRepository applicationRepository;
+    private final EscrowLockService escrowLockService;
 
     // 캠페인 목록 조회
     @Transactional(readOnly = true)
@@ -51,7 +53,9 @@ public class CampaignService {
                 dto.getDeadline(),
                 dto.getTotalSlots()
         );
-        return campaignRepository.save(campaign);
+        Campaign savedCampaign = campaignRepository.save(campaign);
+        escrowLockService.lockCampaignBudget(savedCampaign);
+        return savedCampaign;
     }
 
     // 캠페인 상태 변경
@@ -67,7 +71,8 @@ public class CampaignService {
     public Campaign closeCampaign(Long campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
-        campaign.close();
+        campaign.closeManually();
+        escrowLockService.refundUnusedBudget(campaignId);
         rejectPendingApplications(campaignId);
         return campaign;
     }
@@ -85,6 +90,7 @@ public class CampaignService {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
         campaign.cancel();
+        escrowLockService.refundUnusedBudget(campaignId);
         rejectPendingApplications(campaignId);
         return campaign;
     }
