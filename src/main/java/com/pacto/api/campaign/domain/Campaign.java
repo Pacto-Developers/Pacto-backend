@@ -107,4 +107,13 @@ public class Campaign {
         this.remainingSlots--;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public int calculateRemainingBudget() {
+        return this.rewardPoint * this.remainingSlots;
+    }
+
+    public void clearRemainingSlots() {
+        this.remainingSlots = 0;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
