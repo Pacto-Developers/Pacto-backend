@@ -74,6 +74,14 @@ public class Campaign {
 
     public void close() {
         if (this.status != CampaignStatus.RECRUITING) {
+            throw new InvalidCampaignStatusException("모집 중인 캠페인만 마감 처리할 수 있습니다.");
+        }
+        this.status = CampaignStatus.CLOSED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void closeManually() {
+        if (this.status != CampaignStatus.RECRUITING) {
             throw new InvalidCampaignStatusException("모집 중인 캠페인만 진행 중으로 전환할 수 있습니다.");
         }
         this.status = CampaignStatus.IN_PROGRESS;
