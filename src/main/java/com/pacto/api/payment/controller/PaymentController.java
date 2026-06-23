@@ -3,6 +3,7 @@ package com.pacto.api.payment.controller;
 import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
+import com.pacto.api.payment.dto.PaymentDetailResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.service.PaymentService;
@@ -36,6 +37,19 @@ public class PaymentController {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(
                 CommonResponse.success("결제 내역 조회 성공", paymentService.getMyPayments(userId, page, size))
+        );
+    }
+
+    @Operation(summary = "내 결제 상세 조회", description = "JWT의 userId와 일치하는 결제 내역만 조회합니다.")
+    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = PaymentDetailResponse.class)))
+    @GetMapping("/{paymentId}")
+    public ResponseEntity<CommonResponse<PaymentDetailResponse>> getMyPayment(
+            Authentication authentication,
+            @PathVariable Long paymentId
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(
+                CommonResponse.success("결제 상세 조회 성공", paymentService.getMyPayment(userId, paymentId))
         );
     }
 

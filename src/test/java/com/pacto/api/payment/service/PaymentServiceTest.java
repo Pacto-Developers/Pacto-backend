@@ -7,6 +7,7 @@ import com.pacto.api.common.exception.PaymentVerificationException;
 import com.pacto.api.payment.client.PortOneClient;
 import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
+import com.pacto.api.payment.dto.PaymentDetailResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.entity.Payment;
@@ -87,6 +88,32 @@ class PaymentServiceTest {
                 .isInstanceOf(InvalidPaymentPageRequestException.class);
 
         verifyNoInteractions(paymentRepository);
+    }
+
+    @Test
+    void 본인의_결제_상세를_조회한다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        ReflectionTestUtils.setField(payment, "paymentId", 7L);
+        payment.markPaid("imp-1");
+        when(paymentRepository.findById(7L)).thenReturn(Optional.of(payment));
+
+        PaymentDetailResponse response = paymentService.getMyPayment(1L, 7L);
+
+        assertThat(response.getPaymentId()).isEqualTo(7L);
+        assertThat(response.getMerchantUid()).isEqualTo("payment-1");
+        assertThat(response.getImpUid()).isEqualTo("imp-1");
+        assertThat(response.getAmount()).isEqualTo(10000);
+        assertThat(response.getStatus()).isEqualTo(PaymentStatus.PAID);
+    }
+
+    @Test
+    void 다른_사용자의_결제_상세는_조회할_수_없다() {
+        Payment payment = Payment.createReady(2L, "payment-1", 10000);
+        when(paymentRepository.findById(7L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.getMyPayment(1L, 7L))
+                .isInstanceOf(PaymentNotFoundException.class)
+                .hasMessage("결제 요청을 찾을 수 없습니다.");
     }
 
     @Test

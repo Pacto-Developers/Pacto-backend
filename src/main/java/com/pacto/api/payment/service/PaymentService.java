@@ -8,6 +8,7 @@ import com.pacto.api.common.exception.PaymentVerificationException;
 import com.pacto.api.payment.client.PortOneClient;
 import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
+import com.pacto.api.payment.dto.PaymentDetailResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.entity.Payment;
@@ -48,6 +49,14 @@ public class PaymentService {
                 paymentRepository.findByUserId(userId, pageRequest),
                 PaymentResponse::from
         );
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentDetailResponse getMyPayment(Long userId, Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .filter(foundPayment -> foundPayment.getUserId().equals(userId))
+                .orElseThrow(PaymentNotFoundException::new);
+        return PaymentDetailResponse.from(payment);
     }
 
     private void validatePageRequest(int page, int size) {
