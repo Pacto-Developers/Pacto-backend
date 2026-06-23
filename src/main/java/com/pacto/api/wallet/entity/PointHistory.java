@@ -35,16 +35,31 @@ public class PointHistory {
     @Column(name = "reference_id", updatable = false)
     private Long referenceId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reference_type", updatable = false)
+    private PointHistoryReferenceType referenceType;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     public static PointHistory create(Wallet wallet, int amount, PointHistoryType type, Long referenceId) {
+        return create(wallet, amount, type, referenceId, PointHistoryReferenceType.infer(type));
+    }
+
+    public static PointHistory create(
+            Wallet wallet,
+            int amount,
+            PointHistoryType type,
+            Long referenceId,
+            PointHistoryReferenceType referenceType
+    ) {
         PointHistory history = new PointHistory();
         history.wallet = wallet;
         history.amount = amount;
         history.type = type;
         history.referenceId = referenceId;
+        history.referenceType = referenceType;
         return history;
     }
 }

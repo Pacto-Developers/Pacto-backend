@@ -11,10 +11,13 @@ import com.pacto.api.escrow.repository.EscrowLedgerRepository;
 import com.pacto.api.mission.domain.MissionStatus;
 import com.pacto.api.mission.repository.MissionRepository;
 import com.pacto.api.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistoryReferenceType;
 import com.pacto.api.wallet.entity.PointHistoryType;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.PointHistoryRepository;
 import com.pacto.api.wallet.repository.WalletRepository;
+import com.pacto.api.wallet.service.PointHistoryResponseMapper;
+import com.pacto.api.wallet.dto.PointHistoryResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,6 +47,7 @@ class AdvertiserDashboardServiceTest {
     @Mock WalletRepository walletRepository;
     @Mock PointHistoryRepository pointHistoryRepository;
     @Mock EscrowLedgerRepository escrowLedgerRepository;
+    @Mock PointHistoryResponseMapper pointHistoryResponseMapper;
     @InjectMocks AdvertiserDashboardService advertiserDashboardService;
 
     @Test
@@ -72,6 +76,7 @@ class AdvertiserDashboardServiceTest {
 
         PointHistory chargeHistory = PointHistory.create(wallet, 50000, PointHistoryType.CHARGE, 7L);
         ReflectionTestUtils.setField(chargeHistory, "historyId", 1L);
+        PointHistoryResponse chargeResponse = PointHistoryResponse.from(chargeHistory);
 
         when(campaignRepository.findByAdvertiserId(1L)).thenReturn(List.of(campaign));
         when(campaignRepository.countByAdvertiserIdAndStatus(1L, CampaignStatus.RECRUITING)).thenReturn(1L);
@@ -87,6 +92,7 @@ class AdvertiserDashboardServiceTest {
         when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
         when(pointHistoryRepository.findByWallet_WalletId(eq(10L), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(chargeHistory), PageRequest.of(0, 5), 1));
+        when(pointHistoryResponseMapper.toResponse(chargeHistory)).thenReturn(chargeResponse);
         when(escrowLedgerRepository.findByCampaignIdIn(List.of(100L)))
                 .thenReturn(List.of(lockedEscrow, releasedEscrow, canceledEscrow));
 
@@ -102,6 +108,7 @@ class AdvertiserDashboardServiceTest {
         assertThat(response.escrowSummary().canceledAmount()).isEqualTo(5000);
         assertThat(response.recentPointHistories()).hasSize(1);
         assertThat(response.recentPointHistories().get(0).getType()).isEqualTo(PointHistoryType.CHARGE);
+        assertThat(response.recentPointHistories().get(0).getReferenceType()).isEqualTo(PointHistoryReferenceType.PAYMENT);
         assertThat(response.recentPointHistories().get(0).getReferenceId()).isEqualTo(7L);
     }
 }

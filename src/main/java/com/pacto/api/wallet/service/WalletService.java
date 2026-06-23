@@ -9,6 +9,7 @@ import com.pacto.api.wallet.dto.WalletResponse;
 import com.pacto.api.wallet.dto.WithdrawRequest;
 import com.pacto.api.wallet.dto.WithdrawResponse;
 import com.pacto.api.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistoryReferenceType;
 import com.pacto.api.wallet.entity.PointHistoryType;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.entity.Withdrawal;
@@ -28,6 +29,7 @@ public class WalletService {
     private final WalletRepository walletRepository;
     private final PointHistoryRepository pointHistoryRepository;
     private final WithdrawalRepository withdrawalRepository;
+    private final PointHistoryResponseMapper pointHistoryResponseMapper;
 
     @Transactional(readOnly = true)
     public WalletResponse getMyWallet(Long userId) {
@@ -47,7 +49,7 @@ public class WalletService {
         );
         return PageResponse.from(
                 pointHistoryRepository.findByWallet_WalletId(wallet.getWalletId(), pageRequest),
-                PointHistoryResponse::from
+                pointHistoryResponseMapper::toResponse
         );
     }
 
@@ -71,7 +73,8 @@ public class WalletService {
                 wallet,
                 -request.getAmount(),
                 PointHistoryType.WITHDRAW,
-                savedWithdrawal.getWithdrawalId()
+                savedWithdrawal.getWithdrawalId(),
+                PointHistoryReferenceType.WITHDRAWAL
         ));
 
         return WithdrawResponse.from(savedWithdrawal, wallet.getBalance());
@@ -92,7 +95,8 @@ public class WalletService {
                 wallet,
                 amount,
                 PointHistoryType.CHARGE,
-                paymentId
+                paymentId,
+                PointHistoryReferenceType.PAYMENT
         ));
     }
 }
