@@ -53,7 +53,10 @@ public class ApplicationService {
         application.accept();
         applicationRepository.save(application);
 
-        Long escrowId = escrowLockService.lock(application.getCampaignId(), application.getBloggerId());
+        Long escrowId = escrowLockService.createEscrowForSelection(
+                application.getCampaignId(),
+                application.getBloggerId()
+        );
         missionService.acceptMission(application.getCampaignId(), application.getBloggerId(), escrowId);
 
         return application;
