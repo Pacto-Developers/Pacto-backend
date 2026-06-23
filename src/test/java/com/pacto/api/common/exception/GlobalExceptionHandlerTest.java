@@ -53,6 +53,9 @@ class GlobalExceptionHandlerTest {
         void throwInvalidEscrowState() {
             throw new InvalidEscrowStateException("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
         }
+
+        @GetMapping("/test/invalid-payment-page")
+        void throwInvalidPaymentPage() { throw new InvalidPaymentPageRequestException(); }
     }
 
     @Test
@@ -125,5 +128,13 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("LOCKED 상태의 에스크로만 처리할 수 있습니다."));
+    }
+
+    @Test
+    void 잘못된_결제_내역_페이지_요청은_400_반환() throws Exception {
+        mockMvc.perform(get("/test/invalid-payment-page"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("페이지는 1 이상이고, 페이지 크기는 1 이상 100 이하여야 합니다."));
     }
 }

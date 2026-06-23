@@ -1,6 +1,7 @@
 package com.pacto.api.payment.service;
 
 import com.pacto.api.common.dto.PageResponse;
+import com.pacto.api.common.exception.InvalidPaymentPageRequestException;
 import com.pacto.api.common.exception.PaymentAlreadyProcessedException;
 import com.pacto.api.common.exception.PaymentNotFoundException;
 import com.pacto.api.common.exception.PaymentVerificationException;
@@ -37,8 +38,9 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public PageResponse<PaymentResponse> getMyPayments(Long userId, int page, int size) {
+        validatePageRequest(page, size);
         PageRequest pageRequest = PageRequest.of(
-                Math.max(page, 1) - 1,
+                page - 1,
                 size,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
@@ -46,6 +48,12 @@ public class PaymentService {
                 paymentRepository.findByUserId(userId, pageRequest),
                 PaymentResponse::from
         );
+    }
+
+    private void validatePageRequest(int page, int size) {
+        if (page < 1 || size < 1 || size > 100) {
+            throw new InvalidPaymentPageRequestException();
+        }
     }
 
     @Transactional

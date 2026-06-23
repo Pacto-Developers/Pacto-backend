@@ -1,6 +1,7 @@
 package com.pacto.api.payment.service;
 
 import com.pacto.api.common.exception.PaymentAlreadyProcessedException;
+import com.pacto.api.common.exception.InvalidPaymentPageRequestException;
 import com.pacto.api.common.exception.PaymentNotFoundException;
 import com.pacto.api.common.exception.PaymentVerificationException;
 import com.pacto.api.payment.client.PortOneClient;
@@ -75,6 +76,17 @@ class PaymentServiceTest {
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(20);
         assertThat(pageableCaptor.getValue().getSort().getOrderFor("createdAt").getDirection())
                 .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
+    }
+
+    @Test
+    void 잘못된_결제_내역_페이지_요청은_예외가_발생한다() {
+        assertThatThrownBy(() -> paymentService.getMyPayments(1L, 0, 20))
+                .isInstanceOf(InvalidPaymentPageRequestException.class)
+                .hasMessage("페이지는 1 이상이고, 페이지 크기는 1 이상 100 이하여야 합니다.");
+        assertThatThrownBy(() -> paymentService.getMyPayments(1L, 1, 101))
+                .isInstanceOf(InvalidPaymentPageRequestException.class);
+
+        verifyNoInteractions(paymentRepository);
     }
 
     @Test
