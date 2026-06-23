@@ -71,7 +71,7 @@ public class CampaignService {
     public Campaign closeCampaign(Long campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
-        campaign.close();
+        campaign.closeManually();
         escrowLockService.refundUnusedBudget(campaignId);
         rejectPendingApplications(campaignId);
         return campaign;
