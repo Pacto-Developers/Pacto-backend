@@ -7,6 +7,7 @@ import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.escrow.entity.EscrowLedger;
 import com.pacto.api.escrow.repository.EscrowLedgerRepository;
 import com.pacto.api.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistoryReferenceType;
 import com.pacto.api.wallet.entity.PointHistoryType;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.PointHistoryRepository;
@@ -35,7 +36,8 @@ public class EscrowLockService {
                 advertiserWallet,
                 -totalBudget,
                 PointHistoryType.LOCK,
-                campaign.getCampaignId()
+                campaign.getCampaignId(),
+                PointHistoryReferenceType.CAMPAIGN
         ));
     }
 
@@ -73,7 +75,8 @@ public class EscrowLockService {
                 advertiserWallet,
                 unusedBudget,
                 PointHistoryType.REFUND,
-                campaign.getCampaignId()
+                campaign.getCampaignId(),
+                PointHistoryReferenceType.CAMPAIGN
         ));
     }
 

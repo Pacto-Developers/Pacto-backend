@@ -18,6 +18,7 @@ import com.pacto.api.wallet.dto.PointHistoryResponse;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.PointHistoryRepository;
 import com.pacto.api.wallet.repository.WalletRepository;
+import com.pacto.api.wallet.service.PointHistoryResponseMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -37,6 +38,7 @@ public class AdvertiserDashboardService {
     private final WalletRepository walletRepository;
     private final PointHistoryRepository pointHistoryRepository;
     private final EscrowLedgerRepository escrowLedgerRepository;
+    private final PointHistoryResponseMapper pointHistoryResponseMapper;
 
     public AdvertiserDashboardResponse getDashboard(Long advertiserId) {
         Wallet wallet = walletRepository.findByUserId(advertiserId)
@@ -99,7 +101,7 @@ public class AdvertiserDashboardService {
                 )
                 .getContent()
                 .stream()
-                .map(PointHistoryResponse::from)
+                .map(pointHistoryResponseMapper::toResponse)
                 .toList();
     }
 

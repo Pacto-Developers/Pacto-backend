@@ -42,6 +42,7 @@ class WalletServiceTest {
     @Mock WalletRepository walletRepository;
     @Mock PointHistoryRepository pointHistoryRepository;
     @Mock WithdrawalRepository withdrawalRepository;
+    @Mock PointHistoryResponseMapper pointHistoryResponseMapper;
     @InjectMocks WalletService walletService;
 
     private Wallet wallet;
@@ -84,6 +85,7 @@ class WalletServiceTest {
         when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
         when(pointHistoryRepository.findByWallet_WalletId(eq(10L), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(java.util.List.of(history), PageRequest.of(0, 20), 1));
+        when(pointHistoryResponseMapper.toResponse(history)).thenReturn(PointHistoryResponse.from(history));
 
         PageResponse<PointHistoryResponse> result = walletService.getMyHistories(1L, 1, 20);
 

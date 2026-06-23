@@ -8,6 +8,7 @@ import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.escrow.entity.EscrowLedger;
 import com.pacto.api.escrow.repository.EscrowLedgerRepository;
 import com.pacto.api.wallet.entity.PointHistory;
+import com.pacto.api.wallet.entity.PointHistoryReferenceType;
 import com.pacto.api.wallet.entity.PointHistoryType;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.PointHistoryRepository;
@@ -44,7 +45,8 @@ public class EscrowSettlementService {
                 bloggerWallet,
                 escrow.getAmount(),
                 PointHistoryType.RELEASE,
-                escrow.getEscrowId()
+                escrow.getEscrowId(),
+                PointHistoryReferenceType.ESCROW
         ));
     }
 
@@ -64,7 +66,8 @@ public class EscrowSettlementService {
                 advertiserWallet,
                 escrow.getAmount(),
                 PointHistoryType.REFUND,
-                escrow.getEscrowId()
+                escrow.getEscrowId(),
+                PointHistoryReferenceType.ESCROW
         ));
     }
 

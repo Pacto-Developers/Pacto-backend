@@ -3,6 +3,7 @@ package com.pacto.api.wallet.controller;
 import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.wallet.dto.PointHistoryResponse;
+import com.pacto.api.wallet.entity.PointHistory;
 import com.pacto.api.wallet.service.WalletService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +28,7 @@ class WalletControllerTest {
     @Test
     void 포인트_내역_조회는_CommonResponse로_응답한다() {
         PageResponse<PointHistoryResponse> histories = PageResponse.from(
-                new PageImpl<>(List.of()),
+                new PageImpl<PointHistory>(List.of()),
                 PointHistoryResponse::from
         );
         when(walletService.getMyHistories(1L, 1, 20)).thenReturn(histories);
