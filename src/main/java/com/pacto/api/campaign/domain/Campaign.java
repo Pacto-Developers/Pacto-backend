@@ -96,6 +96,14 @@ public class Campaign {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void complete() {
+        if (this.status != CampaignStatus.IN_PROGRESS) {
+            throw new InvalidCampaignStatusException("진행 중인 캠페인만 완료 처리할 수 있습니다.");
+        }
+        this.status = CampaignStatus.COMPLETED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void cancel() {
         if (this.status == CampaignStatus.CANCELLED) {
             throw new InvalidCampaignStatusException("이미 취소된 캠페인입니다.");

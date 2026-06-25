@@ -12,7 +12,6 @@ import com.pacto.api.common.exception.ApplicationNotFoundException;
 import com.pacto.api.common.exception.CampaignNotFoundException;
 import com.pacto.api.common.exception.CampaignNotOpenException;
 import com.pacto.api.common.exception.DuplicateApplicationException;
-import com.pacto.api.common.exception.InvalidCampaignStatusException;
 import com.pacto.api.escrow.service.EscrowLockService;
 import com.pacto.api.mission.service.MissionService;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +53,7 @@ public class ApplicationService {
         Campaign campaign = campaignRepository.findById(application.getCampaignId())
                 .orElseThrow(CampaignNotFoundException::new);
         if (campaign.getStatus() != CampaignStatus.RECRUITING && campaign.getStatus() != CampaignStatus.CLOSED) {
-            throw new InvalidCampaignStatusException("모집 중이거나 마감된 캠페인에서만 신청자를 선정할 수 있습니다.");
+            throw new CampaignNotOpenException();
         }
 
         application.accept();
