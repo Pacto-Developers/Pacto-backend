@@ -82,17 +82,17 @@ public class Campaign {
 
     public void closeManually() {
         if (this.status != CampaignStatus.RECRUITING) {
-            throw new InvalidCampaignStatusException("모집 중인 캠페인만 진행 중으로 전환할 수 있습니다.");
+            throw new InvalidCampaignStatusException("모집 중인 캠페인만 마감 처리할 수 있습니다.");
         }
-        this.status = CampaignStatus.IN_PROGRESS;
+        this.status = CampaignStatus.CLOSED;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void complete() {
-        if (this.status != CampaignStatus.IN_PROGRESS) {
-            throw new InvalidCampaignStatusException("진행 중인 캠페인만 완료 처리할 수 있습니다.");
+    public void proceed() {
+        if (this.status != CampaignStatus.CLOSED) {
+            throw new InvalidCampaignStatusException("마감된 캠페인만 진행 중으로 전환할 수 있습니다.");
         }
-        this.status = CampaignStatus.COMPLETED;
+        this.status = CampaignStatus.IN_PROGRESS;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -100,8 +100,8 @@ public class Campaign {
         if (this.status == CampaignStatus.CANCELLED) {
             throw new InvalidCampaignStatusException("이미 취소된 캠페인입니다.");
         }
-        if (this.status != CampaignStatus.RECRUITING && this.status != CampaignStatus.IN_PROGRESS) {
-            throw new InvalidCampaignStatusException("모집 중 또는 진행 중인 캠페인만 취소할 수 있습니다.");
+        if (this.status == CampaignStatus.IN_PROGRESS || this.status == CampaignStatus.COMPLETED) {
+            throw new InvalidCampaignStatusException("진행 중이거나 완료된 캠페인은 취소할 수 없습니다.");
         }
         this.status = CampaignStatus.CANCELLED;
         this.updatedAt = LocalDateTime.now();

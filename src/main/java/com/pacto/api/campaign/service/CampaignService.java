@@ -78,10 +78,10 @@ public class CampaignService {
     }
 
     @Transactional
-    public Campaign completeCampaign(Long campaignId) {
+    public Campaign proceedCampaign(Long campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
-        campaign.complete();
+        campaign.proceed();
         return campaign;
     }
 
