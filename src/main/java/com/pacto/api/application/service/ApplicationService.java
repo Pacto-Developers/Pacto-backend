@@ -50,6 +50,12 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(ApplicationNotFoundException::new);
 
+        Campaign campaign = campaignRepository.findById(application.getCampaignId())
+                .orElseThrow(CampaignNotFoundException::new);
+        if (campaign.getStatus() != CampaignStatus.RECRUITING && campaign.getStatus() != CampaignStatus.CLOSED) {
+            throw new CampaignNotOpenException();
+        }
+
         application.accept();
         applicationRepository.save(application);
 

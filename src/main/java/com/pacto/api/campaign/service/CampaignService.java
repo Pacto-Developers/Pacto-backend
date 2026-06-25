@@ -8,6 +8,7 @@ import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.dto.CampaignRequestDto;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.common.exception.CampaignNotFoundException;
+import com.pacto.api.common.exception.InvalidCampaignStatusException;
 import com.pacto.api.escrow.service.EscrowLockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -78,6 +79,14 @@ public class CampaignService {
     }
 
     @Transactional
+    public Campaign proceedCampaign(Long campaignId) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(CampaignNotFoundException::new);
+        campaign.proceed();
+        return campaign;
+    }
+
+    @Transactional
     public Campaign completeCampaign(Long campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
@@ -89,6 +98,10 @@ public class CampaignService {
     public Campaign cancelCampaign(Long campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
+        boolean hasAccepted = !applicationRepository.findByCampaignIdAndStatus(campaignId, ApplicationStatus.ACCEPTED).isEmpty();
+        if (hasAccepted) {
+            throw new InvalidCampaignStatusException("선정된 블로거가 있어 취소할 수 없습니다.");
+        }
         campaign.cancel();
         escrowLockService.refundUnusedBudget(campaignId);
         rejectPendingApplications(campaignId);

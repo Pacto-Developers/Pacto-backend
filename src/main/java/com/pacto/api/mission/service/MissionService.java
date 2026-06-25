@@ -2,6 +2,7 @@ package com.pacto.api.mission.service;
 
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.repository.CampaignRepository;
+import com.pacto.api.campaign.service.CampaignService;
 import com.pacto.api.common.exception.MissionNotFoundException;
 import com.pacto.api.escrow.service.EscrowSettlementService;
 import com.pacto.api.mission.domain.Mission;
@@ -11,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +23,10 @@ public class MissionService {
     private final MissionRepository missionRepository;
     private final EscrowSettlementService escrowSettlementService;
     private final CampaignRepository campaignRepository;
+    private final CampaignService campaignService;
+
+    private static final Set<MissionStatus> TERMINAL_STATUSES =
+            EnumSet.of(MissionStatus.APPROVED, MissionStatus.REJECTED, MissionStatus.CANCELLED);
 
     // 내 미션 목록 조회
     @Transactional(readOnly = true)
@@ -46,7 +53,9 @@ public class MissionService {
                 .orElseThrow(() -> new MissionNotFoundException());
         mission.approve();
         escrowSettlementService.release(mission.getEscrowId());
-        return missionRepository.save(mission);
+        missionRepository.save(mission);
+        tryCompleteCampaign(mission.getCampaignId());
+        return mission;
     }
 
     // 미션 반려
@@ -55,7 +64,9 @@ public class MissionService {
         Mission mission = missionRepository.findById(missionId)
                 .orElseThrow(MissionNotFoundException::new);
         mission.reject();
-        return missionRepository.save(mission);
+        missionRepository.save(mission);
+        tryCompleteCampaign(mission.getCampaignId());
+        return mission;
     }
 
     // 미션 취소
@@ -84,5 +95,14 @@ public class MissionService {
     @Transactional(readOnly = true)
     public List<Mission> getMissionsByCampaignId(Long campaignId) {
         return missionRepository.findByCampaignId(campaignId);
+    }
+
+    private void tryCompleteCampaign(Long campaignId) {
+        List<Mission> missions = missionRepository.findByCampaignId(campaignId);
+        boolean allSettled = !missions.isEmpty() &&
+                missions.stream().allMatch(m -> TERMINAL_STATUSES.contains(m.getStatus()));
+        if (allSettled) {
+            campaignService.completeCampaign(campaignId);
+        }
     }
 }

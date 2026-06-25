@@ -78,7 +78,7 @@ public class CampaignController {
         );
     }
 
-    @Operation(summary = "캠페인 모집 마감 (RECRUITING → IN_PROGRESS)")
+    @Operation(summary = "캠페인 모집 마감 (RECRUITING → CLOSED)")
     @PatchMapping("/{campaignId}/close")
     public ResponseEntity<?> closeCampaign(@PathVariable Long campaignId) {
         Campaign campaign = campaignService.closeCampaign(campaignId);
@@ -88,17 +88,17 @@ public class CampaignController {
         )));
     }
 
-    @Operation(summary = "캠페인 완료 처리 (IN_PROGRESS → COMPLETED)")
-    @PatchMapping("/{campaignId}/complete")
-    public ResponseEntity<?> completeCampaign(@PathVariable Long campaignId) {
-        Campaign campaign = campaignService.completeCampaign(campaignId);
-        return ResponseEntity.ok(CommonResponse.success("캠페인 완료 처리 성공", Map.of(
+    @Operation(summary = "캠페인 진행 전환 (CLOSED → IN_PROGRESS)")
+    @PatchMapping("/{campaignId}/proceed")
+    public ResponseEntity<?> proceedCampaign(@PathVariable Long campaignId) {
+        Campaign campaign = campaignService.proceedCampaign(campaignId);
+        return ResponseEntity.ok(CommonResponse.success("캠페인 진행 전환 성공", Map.of(
                 "campaign_id", campaign.getCampaignId(),
                 "status", campaign.getStatus()
         )));
     }
 
-    @Operation(summary = "캠페인 취소 (RECRUITING 또는 IN_PROGRESS → CANCELLED)")
+    @Operation(summary = "캠페인 취소 (RECRUITING 또는 CLOSED → CANCELLED)")
     @PatchMapping("/{campaignId}/cancel")
     public ResponseEntity<?> cancelCampaign(@PathVariable Long campaignId) {
         Campaign campaign = campaignService.cancelCampaign(campaignId);
