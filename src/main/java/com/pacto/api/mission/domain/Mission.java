@@ -37,8 +37,8 @@ public class Mission {
 
     // URL 제출
     public void submit(String submittedUrl) {
-        if (this.status != MissionStatus.IN_PROGRESS) {
-            throw new InvalidMissionStatusException("진행 중인 미션만 제출할 수 있습니다.");
+        if (this.status != MissionStatus.READY) {
+            throw new InvalidMissionStatusException("대기 중인 미션만 제출할 수 있습니다.");
         }
         this.submittedUrl = submittedUrl;
         this.status = MissionStatus.SUBMITTED;
@@ -78,7 +78,7 @@ public class Mission {
     public Mission(Long campaignId, Long bloggerId) {
         this.campaignId = campaignId;
         this.bloggerId = bloggerId;
-        this.status = MissionStatus.IN_PROGRESS;
+        this.status = MissionStatus.READY;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -87,7 +87,7 @@ public class Mission {
         this.campaignId = campaignId;
         this.bloggerId = bloggerId;
         this.escrowId = escrowId;
-        this.status = MissionStatus.IN_PROGRESS;
+        this.status = MissionStatus.READY;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }

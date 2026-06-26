@@ -1,8 +1,13 @@
 package com.pacto.api.mission.service;
 
 import com.pacto.api.campaign.domain.Campaign;
+import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.campaign.service.CampaignService;
+import com.pacto.api.common.exception.CampaignAccessDeniedException;
+import com.pacto.api.common.exception.CampaignNotFoundException;
+import com.pacto.api.common.exception.InvalidCampaignStatusException;
+import com.pacto.api.common.exception.MissionAccessDeniedException;
 import com.pacto.api.common.exception.MissionNotFoundException;
 import com.pacto.api.escrow.service.EscrowSettlementService;
 import com.pacto.api.mission.domain.Mission;
@@ -39,18 +44,31 @@ public class MissionService {
 
     // URL 제출
     @Transactional
-    public Mission submitMission(Long missionId, String submittedUrl) {
+    public Mission submitMission(Long missionId, Long bloggerId, String submittedUrl) {
         Mission mission = missionRepository.findById(missionId)
-                .orElseThrow(() -> new MissionNotFoundException());
+                .orElseThrow(MissionNotFoundException::new);
+        if (!mission.getBloggerId().equals(bloggerId)) {
+            throw new MissionAccessDeniedException();
+        }
+        Campaign campaign = campaignRepository.findById(mission.getCampaignId())
+                .orElseThrow(CampaignNotFoundException::new);
+        if (campaign.getStatus() != CampaignStatus.IN_PROGRESS) {
+            throw new InvalidCampaignStatusException("캠페인이 진행 중일 때만 미션을 제출할 수 있습니다.");
+        }
         mission.submit(submittedUrl);
         return missionRepository.save(mission);
     }
 
     // 미션 승인
     @Transactional
-    public Mission approveMission(Long missionId) {
+    public Mission approveMission(Long missionId, Long advertiserId) {
         Mission mission = missionRepository.findById(missionId)
                 .orElseThrow(() -> new MissionNotFoundException());
+        Campaign campaign = campaignRepository.findById(mission.getCampaignId())
+                .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         mission.approve();
         escrowSettlementService.release(mission.getEscrowId());
         missionRepository.save(mission);
@@ -60,10 +78,16 @@ public class MissionService {
 
     // 미션 반려
     @Transactional
-    public Mission rejectMission(Long missionId) {
+    public Mission rejectMission(Long missionId, Long advertiserId) {
         Mission mission = missionRepository.findById(missionId)
                 .orElseThrow(MissionNotFoundException::new);
+        Campaign campaign = campaignRepository.findById(mission.getCampaignId())
+                .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         mission.reject();
+        escrowSettlementService.cancel(mission.getEscrowId());
         missionRepository.save(mission);
         tryCompleteCampaign(mission.getCampaignId());
         return mission;
@@ -71,9 +95,14 @@ public class MissionService {
 
     // 미션 취소
     @Transactional
-    public Mission cancelMission(Long missionId) {
+    public Mission cancelMission(Long missionId, Long advertiserId) {
         Mission mission = missionRepository.findById(missionId)
                 .orElseThrow(MissionNotFoundException::new);
+        Campaign campaign = campaignRepository.findById(mission.getCampaignId())
+                .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         mission.cancel();
         escrowSettlementService.cancel(mission.getEscrowId());
         return missionRepository.save(mission);
