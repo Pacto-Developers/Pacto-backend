@@ -5,6 +5,7 @@ import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
+import com.pacto.api.payment.dto.PaymentWebhookRequest;
 import com.pacto.api.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -62,6 +63,17 @@ public class PaymentController {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.success("결제 요청 생성 성공", paymentService.createPayment(userId, request)));
+    }
+
+    @Operation(summary = "포트원 결제 웹훅 수신", description = "포트원 V2 결제 완료 웹훅을 수신해 결제를 확정합니다.")
+    @ApiResponse(responseCode = "200")
+    @PostMapping("/webhook/portone")
+    public ResponseEntity<Void> handlePortOneWebhook(@RequestBody PaymentWebhookRequest request) {
+        if (request.isPaidTransaction() && request.paymentId() != null) {
+            paymentService.confirmPaidPayment(request.paymentId());
+        }
+
+        return ResponseEntity.ok().build();
     }
 
 }

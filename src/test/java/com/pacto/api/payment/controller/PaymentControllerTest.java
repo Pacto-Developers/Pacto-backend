@@ -4,6 +4,7 @@ import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
+import com.pacto.api.payment.dto.PaymentWebhookRequest;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.service.PaymentService;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,5 +58,31 @@ class PaymentControllerTest {
         assertThat(response.getBody().success()).isTrue();
         assertThat(response.getBody().message()).isEqualTo("결제 상세 조회 성공");
         assertThat(response.getBody().data()).isSameAs(payment);
+    }
+
+    @Test
+    void 포트원_결제완료_웹훅은_결제를_확정한다() {
+        PaymentWebhookRequest request = new PaymentWebhookRequest(
+                "Transaction.Paid",
+                new PaymentWebhookRequest.WebhookData("payment-1", "store-1", "transaction-1")
+        );
+
+        ResponseEntity<Void> response = paymentController.handlePortOneWebhook(request);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        verify(paymentService).confirmPaidPayment("payment-1");
+    }
+
+    @Test
+    void 포트원_결제완료가_아닌_웹훅은_무시한다() {
+        PaymentWebhookRequest request = new PaymentWebhookRequest(
+                "Transaction.Ready",
+                new PaymentWebhookRequest.WebhookData("payment-1", "store-1", "transaction-1")
+        );
+
+        ResponseEntity<Void> response = paymentController.handlePortOneWebhook(request);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        verify(paymentService, never()).confirmPaidPayment("payment-1");
     }
 }

@@ -51,6 +51,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/campaigns").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/campaigns/{campaignId}").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/portone").permitAll()
                         .requestMatchers("/api/v1/wallets/**").hasAnyRole("BLOGGER", "ADVERTISER")
                         .requestMatchers("/api/v1/advertiser/**").hasRole("ADVERTISER")
                         .anyRequest().authenticated()
