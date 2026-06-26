@@ -12,7 +12,9 @@ import org.springframework.web.client.RestClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class PortOnePaymentClientTest {
@@ -26,7 +28,7 @@ class PortOnePaymentClientTest {
         server = MockRestServiceServer.bindTo(builder).build();
 
         PortOneProperties properties = new PortOneProperties();
-        properties.setBaseUrl("https://api.iamport.kr");
+        properties.setBaseUrl("https://api.portone.io");
         properties.setApiKey("test-key");
         properties.setApiSecret("test-secret");
 
@@ -34,64 +36,44 @@ class PortOnePaymentClientTest {
     }
 
     @Test
-    void 포트원_accessToken을_발급받고_결제내역을_조회한다() {
-        server.expect(once(), requestTo("https://api.iamport.kr/users/getToken"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(content().json("""
-                        {
-                          "imp_key": "test-key",
-                          "imp_secret": "test-secret"
-                        }
-                        """))
-                .andRespond(withSuccess("""
-                        {
-                          "code": 0,
-                          "message": null,
-                          "response": {
-                            "access_token": "portone-token"
-                          }
-                        }
-                        """, MediaType.APPLICATION_JSON));
-
-        server.expect(once(), requestTo("https://api.iamport.kr/payments/imp-1"))
+    void 포트원_V2_결제내역을_조회한다() {
+        server.expect(once(), requestTo("https://api.portone.io/payments/payment-1"))
                 .andExpect(method(HttpMethod.GET))
-                .andExpect(header("Authorization", "portone-token"))
+                .andExpect(header("Authorization", "PortOne test-secret"))
                 .andRespond(withSuccess("""
                         {
-                          "code": 0,
-                          "message": null,
-                          "response": {
-                            "imp_uid": "imp-1",
-                            "merchant_uid": "payment-1",
-                            "amount": 10000,
-                            "status": "paid"
-                          }
+                          "id": "payment-1",
+                          "transactionId": "transaction-1",
+                          "amount": {
+                            "total": 10000
+                          },
+                          "status": "PAID"
                         }
                         """, MediaType.APPLICATION_JSON));
 
-        PortOnePaymentResponse response = client.getPayment("imp-1");
+        PortOnePaymentResponse response = client.getPayment("payment-1");
 
-        assertThat(response.impUid()).isEqualTo("imp-1");
+        assertThat(response.impUid()).isEqualTo("payment-1");
         assertThat(response.merchantUid()).isEqualTo("payment-1");
         assertThat(response.amount()).isEqualTo(10000);
-        assertThat(response.status()).isEqualTo("paid");
+        assertThat(response.status()).isEqualTo("PAID");
         server.verify();
     }
 
     @Test
-    void accessToken_발급에_실패하면_예외가_발생한다() {
-        server.expect(once(), requestTo("https://api.iamport.kr/users/getToken"))
+    void 결제내역_조회_응답이_비어있으면_예외가_발생한다() {
+        server.expect(once(), requestTo("https://api.portone.io/payments/payment-1"))
                 .andRespond(withSuccess("""
                         {
-                          "code": -1,
-                          "message": "invalid api key",
-                          "response": null
+                          "id": null,
+                          "amount": null,
+                          "status": null
                         }
                         """, MediaType.APPLICATION_JSON));
 
-        assertThatThrownBy(() -> client.getPayment("imp-1"))
+        assertThatThrownBy(() -> client.getPayment("payment-1"))
                 .isInstanceOf(PortOneApiException.class)
-                .hasMessage("포트원 access token 발급에 실패했습니다.");
+                .hasMessage("포트원 결제 내역 조회에 실패했습니다.");
         server.verify();
     }
 }
