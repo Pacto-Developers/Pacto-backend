@@ -53,8 +53,7 @@ class PortOnePaymentClientTest {
 
         PortOnePaymentResponse response = client.getPayment("payment-1");
 
-        assertThat(response.impUid()).isEqualTo("payment-1");
-        assertThat(response.merchantUid()).isEqualTo("payment-1");
+        assertThat(response.paymentId()).isEqualTo("payment-1");
         assertThat(response.amount()).isEqualTo(10000);
         assertThat(response.status()).isEqualTo("PAID");
         server.verify();

@@ -5,7 +5,6 @@ import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
-import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -65,16 +64,4 @@ public class PaymentController {
                 .body(CommonResponse.success("결제 요청 생성 성공", paymentService.createPayment(userId, request)));
     }
 
-    @Operation(summary = "결제 검증 요청", description = "클라이언트가 전달한 merchantUid와 impUid로 결제 검증을 요청합니다.")
-    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = PaymentResponse.class)))
-    @PostMapping("/verify")
-    public ResponseEntity<CommonResponse<PaymentResponse>> verifyPayment(
-            Authentication authentication,
-            @RequestBody PaymentVerifyRequest request
-    ) {
-        Long userId = (Long) authentication.getPrincipal();
-        return ResponseEntity.ok(
-                CommonResponse.success("결제 검증 요청 성공", paymentService.verifyPayment(userId, request))
-        );
-    }
 }

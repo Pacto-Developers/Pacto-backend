@@ -29,7 +29,6 @@ public class PortOnePaymentClient implements PortOneClient {
 
         return new PortOnePaymentResponse(
                 response.id(),
-                response.id(),
                 response.amount().total(),
                 response.status()
         );

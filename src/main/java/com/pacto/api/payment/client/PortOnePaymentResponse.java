@@ -1,8 +1,7 @@
 package com.pacto.api.payment.client;
 
 public record PortOnePaymentResponse(
-        String impUid,
-        String merchantUid,
+        String paymentId,
         int amount,
         String status
 ) {
