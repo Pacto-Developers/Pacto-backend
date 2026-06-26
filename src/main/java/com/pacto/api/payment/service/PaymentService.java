@@ -10,7 +10,6 @@ import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
-import com.pacto.api.payment.dto.PaymentVerifyRequest;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.entity.PaymentStatus;
 import com.pacto.api.payment.repository.PaymentRepository;
@@ -66,17 +65,20 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse verifyPayment(Long userId, PaymentVerifyRequest request) {
-        Payment payment = paymentRepository.findByMerchantUid(request.getMerchantUid())
-                .filter(foundPayment -> foundPayment.getUserId().equals(userId))
+    public PaymentResponse confirmPaidPayment(String paymentId) {
+        Payment payment = paymentRepository.findWithLockByMerchantUid(paymentId)
                 .orElseThrow(PaymentNotFoundException::new);
+
+        if (payment.getStatus() == PaymentStatus.PAID) {
+            return PaymentResponse.from(payment);
+        }
 
         validateReady(payment);
 
-        PortOnePaymentResponse portOnePayment = portOneClient.getPayment(request.getImpUid());
-        validatePortOnePayment(payment, request, portOnePayment);
+        PortOnePaymentResponse portOnePayment = portOneClient.getPayment(paymentId);
+        validatePortOnePayment(payment, portOnePayment);
 
-        payment.markPaid(portOnePayment.impUid());
+        payment.markPaid(portOnePayment.paymentId());
         walletService.chargeByPayment(payment.getUserId(), payment.getAmount(), payment.getPaymentId());
         return PaymentResponse.from(payment);
     }
@@ -89,14 +91,9 @@ public class PaymentService {
 
     private void validatePortOnePayment(
             Payment payment,
-            PaymentVerifyRequest request,
             PortOnePaymentResponse portOnePayment
     ) {
-        if (!request.getImpUid().equals(portOnePayment.impUid())) {
-            throw new PaymentVerificationException("포트원 결제 번호가 일치하지 않습니다.");
-        }
-
-        if (!payment.getMerchantUid().equals(portOnePayment.merchantUid())) {
+        if (!payment.getMerchantUid().equals(portOnePayment.paymentId())) {
             throw new PaymentVerificationException("결제 요청 번호가 일치하지 않습니다.");
         }
 
@@ -104,7 +101,7 @@ public class PaymentService {
             throw new PaymentVerificationException("결제 금액이 일치하지 않습니다.");
         }
 
-        if (!"paid".equals(portOnePayment.status())) {
+        if (!"PAID".equals(portOnePayment.status())) {
             throw new PaymentVerificationException("결제가 완료되지 않았습니다.");
         }
     }

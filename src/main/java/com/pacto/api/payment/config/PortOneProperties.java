@@ -14,4 +14,5 @@ public class PortOneProperties {
     private String baseUrl;
     private String apiKey;
     private String apiSecret;
+    private String webhookSecret;
 }

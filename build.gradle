@@ -31,6 +31,8 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	// Swagger UI (Spring Boot 3.x 전용)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+	// PortOne 서버 SDK
+	implementation 'io.portone:server-sdk:0.24.0'
 	// JWT 라이브러리
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'

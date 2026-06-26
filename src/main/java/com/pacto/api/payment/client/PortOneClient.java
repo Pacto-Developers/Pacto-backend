@@ -2,5 +2,5 @@ package com.pacto.api.payment.client;
 
 public interface PortOneClient {
 
-    PortOnePaymentResponse getPayment(String impUid);
+    PortOnePaymentResponse getPayment(String paymentId);
 }
