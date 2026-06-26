@@ -9,6 +9,7 @@ import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.common.exception.ApplicationAccessDeniedException;
 import com.pacto.api.common.exception.ApplicationNotFoundException;
+import com.pacto.api.common.exception.CampaignAccessDeniedException;
 import com.pacto.api.common.exception.CampaignNotFoundException;
 import com.pacto.api.common.exception.CampaignNotOpenException;
 import com.pacto.api.common.exception.DuplicateApplicationException;
@@ -46,12 +47,15 @@ public class ApplicationService {
     }
 
     @Transactional
-    public Application acceptApplication(Long applicationId) {
+    public Application acceptApplication(Long applicationId, Long advertiserId) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(ApplicationNotFoundException::new);
 
         Campaign campaign = campaignRepository.findById(application.getCampaignId())
                 .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         if (campaign.getStatus() != CampaignStatus.RECRUITING && campaign.getStatus() != CampaignStatus.CLOSED) {
             throw new CampaignNotOpenException();
         }
@@ -69,9 +73,14 @@ public class ApplicationService {
     }
 
     @Transactional
-    public Application rejectApplication(Long applicationId) {
+    public Application rejectApplication(Long applicationId, Long advertiserId) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(ApplicationNotFoundException::new);
+        Campaign campaign = campaignRepository.findById(application.getCampaignId())
+                .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         application.reject();
         return applicationRepository.save(application);
     }
@@ -88,7 +97,12 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public List<ApplicationResponse> getApplicationsByCampaign(Long campaignId, ApplicationStatus status) {
+    public List<ApplicationResponse> getApplicationsByCampaign(Long campaignId, Long advertiserId, ApplicationStatus status) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         if (status != null) {
             return applicationRepository.findByCampaignIdAndStatusWithBloggerEmail(campaignId, status);
         }

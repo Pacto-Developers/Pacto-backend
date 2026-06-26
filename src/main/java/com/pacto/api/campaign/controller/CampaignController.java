@@ -21,6 +21,7 @@ import java.util.Map;
 import com.pacto.api.mission.domain.Mission;
 import com.pacto.api.mission.service.MissionService;
 
+
 @RestController
 @RequestMapping("/api/v1/campaigns")
 @RequiredArgsConstructor
@@ -62,26 +63,12 @@ public class CampaignController {
         );
     }
 
-    @Operation(summary = "캠페인 상태 변경")
-    @PatchMapping("/{campaignId}/status")
-    public ResponseEntity<?> updateCampaignStatus(
-            @PathVariable Long campaignId,
-            @RequestBody Map<String, String> body) {
-
-        CampaignStatus status = CampaignStatus.valueOf(body.get("status"));
-        Campaign campaign = campaignService.updateCampaignStatus(campaignId, status);
-        return ResponseEntity.ok(
-                CommonResponse.success("캠페인 상태 변경 성공", Map.of(
-                        "campaign_id", campaign.getCampaignId(),
-                        "status", campaign.getStatus()
-                ))
-        );
-    }
-
     @Operation(summary = "캠페인 모집 마감 (RECRUITING → CLOSED)")
     @PatchMapping("/{campaignId}/close")
     public ResponseEntity<?> closeCampaign(@PathVariable Long campaignId) {
-        Campaign campaign = campaignService.closeCampaign(campaignId);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Campaign campaign = campaignService.closeCampaign(campaignId, advertiserId);
         return ResponseEntity.ok(CommonResponse.success("캠페인 모집 마감 성공", Map.of(
                 "campaign_id", campaign.getCampaignId(),
                 "status", campaign.getStatus()
@@ -91,7 +78,9 @@ public class CampaignController {
     @Operation(summary = "캠페인 진행 전환 (CLOSED → IN_PROGRESS)")
     @PatchMapping("/{campaignId}/proceed")
     public ResponseEntity<?> proceedCampaign(@PathVariable Long campaignId) {
-        Campaign campaign = campaignService.proceedCampaign(campaignId);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Campaign campaign = campaignService.proceedCampaign(campaignId, advertiserId);
         return ResponseEntity.ok(CommonResponse.success("캠페인 진행 전환 성공", Map.of(
                 "campaign_id", campaign.getCampaignId(),
                 "status", campaign.getStatus()
@@ -101,7 +90,9 @@ public class CampaignController {
     @Operation(summary = "캠페인 취소 (RECRUITING 또는 CLOSED → CANCELLED)")
     @PatchMapping("/{campaignId}/cancel")
     public ResponseEntity<?> cancelCampaign(@PathVariable Long campaignId) {
-        Campaign campaign = campaignService.cancelCampaign(campaignId);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Campaign campaign = campaignService.cancelCampaign(campaignId, advertiserId);
         return ResponseEntity.ok(CommonResponse.success("캠페인 취소 성공", Map.of(
                 "campaign_id", campaign.getCampaignId(),
                 "status", campaign.getStatus()

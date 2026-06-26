@@ -40,7 +40,9 @@ public class MissionController {
     public ResponseEntity<?> submitMission(
             @PathVariable Long missionId,
             @RequestBody MissionRequestDto dto) {
-        Mission mission = missionService.submitMission(missionId, dto.getSubmittedUrl());
+        Long bloggerId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Mission mission = missionService.submitMission(missionId, bloggerId, dto.getSubmittedUrl());
         return ResponseEntity.ok(
                 CommonResponse.success("미션 제출 성공", Map.of(
                         "mission_id", mission.getMissionId(),
@@ -52,7 +54,9 @@ public class MissionController {
     @Operation(summary = "미션 승인")
     @PatchMapping("/{missionId}/approve")
     public ResponseEntity<?> approveMission(@PathVariable Long missionId) {
-        Mission mission = missionService.approveMission(missionId);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Mission mission = missionService.approveMission(missionId, advertiserId);
         return ResponseEntity.ok(
                 CommonResponse.success("미션 승인 완료", Map.of(
                         "mission_id", mission.getMissionId(),
@@ -64,7 +68,9 @@ public class MissionController {
     @Operation(summary = "미션 반려 (광고주)")
     @PatchMapping("/{missionId}/reject")
     public ResponseEntity<?> rejectMission(@PathVariable Long missionId) {
-        Mission mission = missionService.rejectMission(missionId);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Mission mission = missionService.rejectMission(missionId, advertiserId);
         return ResponseEntity.ok(
                 CommonResponse.success("미션 반려 완료", Map.of(
                         "mission_id", mission.getMissionId(),
@@ -75,10 +81,10 @@ public class MissionController {
 
     @Operation(summary = "미션 취소")
     @PatchMapping("/{missionId}/cancel")
-    public ResponseEntity<?> cancelMission(
-            @PathVariable Long missionId,
-            @RequestBody MissionRequestDto dto) {
-        Mission mission = missionService.cancelMission(missionId);
+    public ResponseEntity<?> cancelMission(@PathVariable Long missionId) {
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Mission mission = missionService.cancelMission(missionId, advertiserId);
         return ResponseEntity.ok(
                 CommonResponse.success("미션 취소 완료", Map.of(
                         "mission_id", mission.getMissionId(),

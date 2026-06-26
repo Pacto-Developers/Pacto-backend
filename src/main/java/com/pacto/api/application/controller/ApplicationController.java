@@ -39,7 +39,9 @@ public class ApplicationController {
     @Operation(summary = "지원 수락 (광고주) - 에스크로 LOCK + 미션 생성")
     @PatchMapping("/{applicationId}/accept")
     public ResponseEntity<?> accept(@PathVariable Long applicationId) {
-        Application application = applicationService.acceptApplication(applicationId);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Application application = applicationService.acceptApplication(applicationId, advertiserId);
         return ResponseEntity.ok(CommonResponse.success("지원 수락 완료", Map.of(
                 "application_id", application.getApplicationId(),
                 "status", application.getStatus()
@@ -49,7 +51,9 @@ public class ApplicationController {
     @Operation(summary = "지원 거절 (광고주)")
     @PatchMapping("/{applicationId}/reject")
     public ResponseEntity<?> reject(@PathVariable Long applicationId) {
-        Application application = applicationService.rejectApplication(applicationId);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        Application application = applicationService.rejectApplication(applicationId, advertiserId);
         return ResponseEntity.ok(CommonResponse.success("지원 거절 완료", Map.of(
                 "application_id", application.getApplicationId(),
                 "status", application.getStatus()
@@ -72,7 +76,9 @@ public class ApplicationController {
     @GetMapping("/campaign/{campaignId}")
     public ResponseEntity<?> getByCampaign(@PathVariable Long campaignId,
                                            @RequestParam(required = false) ApplicationStatus status) {
-        List<ApplicationResponse> applications = applicationService.getApplicationsByCampaign(campaignId, status);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        List<ApplicationResponse> applications = applicationService.getApplicationsByCampaign(campaignId, advertiserId, status);
         return ResponseEntity.ok(CommonResponse.success("지원 목록 조회 성공", applications));
     }
 
