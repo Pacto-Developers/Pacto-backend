@@ -29,6 +29,16 @@ class PaymentRepositoryTest {
     }
 
     @Test
+    void 결제_확정을_위해_merchantUid로_잠금_조회한다() {
+        Payment payment = paymentRepository.save(Payment.createReady(1L, "payment-1", 10000));
+
+        Optional<Payment> found = paymentRepository.findWithLockByMerchantUid(payment.getMerchantUid());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getMerchantUid()).isEqualTo("payment-1");
+    }
+
+    @Test
     void 결제_완료_후_impUid로_조회한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
         payment.markPaid("imp-1");

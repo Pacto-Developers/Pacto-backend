@@ -117,7 +117,7 @@ class PaymentServiceTest {
     void 결제_확정_성공시_PAID_상태로_변경하고_지갑을_충전한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
         ReflectionTestUtils.setField(payment, "paymentId", 7L);
-        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(paymentRepository.findWithLockByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
         when(portOneClient.getPayment("payment-1"))
                 .thenReturn(new PortOnePaymentResponse("payment-1", 10000, "PAID"));
 
@@ -132,7 +132,7 @@ class PaymentServiceTest {
 
     @Test
     void 없는_결제_요청은_확정할_수_없다() {
-        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.empty());
+        when(paymentRepository.findWithLockByMerchantUid("payment-1")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> paymentService.confirmPaidPayment("payment-1"))
                 .isInstanceOf(PaymentNotFoundException.class)
@@ -145,7 +145,7 @@ class PaymentServiceTest {
     void 이미_처리된_결제는_다시_충전하지_않고_성공으로_응답한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
         payment.markPaid("payment-1");
-        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(paymentRepository.findWithLockByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
 
         PaymentResponse response = paymentService.confirmPaidPayment("payment-1");
 
@@ -157,7 +157,7 @@ class PaymentServiceTest {
     @Test
     void 포트원_결제_요청번호가_다르면_검증에_실패한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
-        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(paymentRepository.findWithLockByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
         when(portOneClient.getPayment("payment-1"))
                 .thenReturn(new PortOnePaymentResponse("payment-2", 10000, "PAID"));
 
@@ -172,7 +172,7 @@ class PaymentServiceTest {
     @Test
     void 포트원_결제_금액이_다르면_검증에_실패한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
-        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(paymentRepository.findWithLockByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
         when(portOneClient.getPayment("payment-1"))
                 .thenReturn(new PortOnePaymentResponse("payment-1", 9000, "PAID"));
 
@@ -187,7 +187,7 @@ class PaymentServiceTest {
     @Test
     void 포트원_결제_상태가_PAID가_아니면_검증에_실패한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
-        when(paymentRepository.findByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
+        when(paymentRepository.findWithLockByMerchantUid("payment-1")).thenReturn(Optional.of(payment));
         when(portOneClient.getPayment("payment-1"))
                 .thenReturn(new PortOnePaymentResponse("payment-1", 10000, "READY"));
 

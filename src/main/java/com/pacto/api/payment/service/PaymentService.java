@@ -66,7 +66,7 @@ public class PaymentService {
 
     @Transactional
     public PaymentResponse confirmPaidPayment(String paymentId) {
-        Payment payment = paymentRepository.findByMerchantUid(paymentId)
+        Payment payment = paymentRepository.findWithLockByMerchantUid(paymentId)
                 .orElseThrow(PaymentNotFoundException::new);
 
         if (payment.getStatus() == PaymentStatus.PAID) {
