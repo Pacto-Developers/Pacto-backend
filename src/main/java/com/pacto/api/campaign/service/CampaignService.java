@@ -7,6 +7,7 @@ import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.dto.CampaignRequestDto;
 import com.pacto.api.campaign.repository.CampaignRepository;
+import com.pacto.api.common.exception.CampaignAccessDeniedException;
 import com.pacto.api.common.exception.CampaignNotFoundException;
 import com.pacto.api.common.exception.InvalidCampaignStatusException;
 import com.pacto.api.escrow.service.EscrowLockService;
@@ -59,30 +60,27 @@ public class CampaignService {
         return savedCampaign;
     }
 
-    // 캠페인 상태 변경
     @Transactional
-    public Campaign updateCampaignStatus(Long campaignId, CampaignStatus status) {
-        Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new CampaignNotFoundException());
-        campaign.updateStatus(status);
-        return campaignRepository.save(campaign);
-    }
-
-    @Transactional
-    public Campaign closeCampaign(Long campaignId) {
+    public Campaign closeCampaign(Long campaignId, Long advertiserId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         campaign.closeManually();
-        escrowLockService.refundUnusedBudget(campaignId);
-        rejectPendingApplications(campaignId);
         return campaign;
     }
 
     @Transactional
-    public Campaign proceedCampaign(Long campaignId) {
+    public Campaign proceedCampaign(Long campaignId, Long advertiserId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         campaign.proceed();
+        escrowLockService.refundUnusedBudget(campaignId);
+        rejectPendingApplications(campaignId);
         return campaign;
     }
 
@@ -95,9 +93,12 @@ public class CampaignService {
     }
 
     @Transactional
-    public Campaign cancelCampaign(Long campaignId) {
+    public Campaign cancelCampaign(Long campaignId, Long advertiserId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         boolean hasAccepted = !applicationRepository.findByCampaignIdAndStatus(campaignId, ApplicationStatus.ACCEPTED).isEmpty();
         if (hasAccepted) {
             throw new InvalidCampaignStatusException("선정된 블로거가 있어 취소할 수 없습니다.");
