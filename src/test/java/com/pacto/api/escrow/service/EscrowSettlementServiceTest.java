@@ -138,6 +138,36 @@ class EscrowSettlementServiceTest {
     }
 
     @Test
+    void cancel은_RELEASED이면_교차_중복_처리를_막는다() {
+        EscrowLedger escrow = EscrowLedger.create(10L, 42L, 50000);
+        escrow.release();
+
+        when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.of(escrow));
+
+        assertThatThrownBy(() -> escrowSettlementService.cancel(505L))
+                .isInstanceOf(InvalidEscrowStateException.class)
+                .hasMessage("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
+
+        verify(escrowLedgerRepository, never()).save(any());
+        verifyNoInteractions(campaignRepository, walletRepository, pointHistoryRepository);
+    }
+
+    @Test
+    void release는_CANCELED이면_교차_중복_처리를_막는다() {
+        EscrowLedger escrow = EscrowLedger.create(10L, 42L, 50000);
+        escrow.cancel();
+
+        when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.of(escrow));
+
+        assertThatThrownBy(() -> escrowSettlementService.release(505L))
+                .isInstanceOf(InvalidEscrowStateException.class)
+                .hasMessage("LOCKED 상태의 에스크로만 처리할 수 있습니다.");
+
+        verify(escrowLedgerRepository, never()).save(any());
+        verifyNoInteractions(campaignRepository, walletRepository, pointHistoryRepository);
+    }
+
+    @Test
     void release는_에스크로가_없으면_공통_예외를_던진다() {
         when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.empty());
 
