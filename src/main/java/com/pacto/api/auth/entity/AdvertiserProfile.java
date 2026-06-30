@@ -26,20 +26,27 @@ public class AdvertiserProfile {
     @JoinColumn(name = "advertiser_id")
     private User user;
 
+    @Column(name = "manager_name")
     private String managerName;
 
+    @Column(name = "company_name")
     private String companyName;
 
+    @Column(name = "business_number")
     private String businessNumber;
 
     private String contact;
 
+    @Column(name = "brand_name")
     private String brandName;
 
+    @Column(name = "bank_name")
     private String bankName;
 
+    @Column(name = "account_number")
     private String accountNumber;
 
+    @Column(name = "account_holder")
     private String accountHolder;
 
     @CreatedDate
@@ -54,5 +61,25 @@ public class AdvertiserProfile {
         AdvertiserProfile profile = new AdvertiserProfile();
         profile.user = user;
         return profile;
+    }
+
+    public void updateProfile(
+            String managerName,
+            String companyName,
+            String businessNumber,
+            String contact,
+            String brandName,
+            String bankName,
+            String accountNumber,
+            String accountHolder
+    ) {
+        this.managerName = managerName;
+        this.companyName = companyName;
+        this.businessNumber = businessNumber;
+        this.contact = contact;
+        this.brandName = brandName;
+        this.bankName = bankName;
+        this.accountNumber = accountNumber;
+        this.accountHolder = accountHolder;
     }
 }

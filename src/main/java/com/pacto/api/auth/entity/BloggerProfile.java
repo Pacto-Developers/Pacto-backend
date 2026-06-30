@@ -28,18 +28,23 @@ public class BloggerProfile {
 
     private String name;
 
+    @Column(name = "blog_url")
     private String blogUrl;
 
     private String contact;
 
     private String nickname;
 
+    @Column(name = "bank_name")
     private String bankName;
 
+    @Column(name = "account_number")
     private String accountNumber;
 
+    @Column(name = "account_holder")
     private String accountHolder;
 
+    @Column(name = "profile_image_url")
     private String profileImageUrl;
 
     @CreatedDate
@@ -54,5 +59,25 @@ public class BloggerProfile {
         BloggerProfile profile = new BloggerProfile();
         profile.user = user;
         return profile;
+    }
+
+    public void updateProfile(
+            String name,
+            String blogUrl,
+            String contact,
+            String nickname,
+            String bankName,
+            String accountNumber,
+            String accountHolder,
+            String profileImageUrl
+    ) {
+        this.name = name;
+        this.blogUrl = blogUrl;
+        this.contact = contact;
+        this.nickname = nickname;
+        this.bankName = bankName;
+        this.accountNumber = accountNumber;
+        this.accountHolder = accountHolder;
+        this.profileImageUrl = profileImageUrl;
     }
 }
