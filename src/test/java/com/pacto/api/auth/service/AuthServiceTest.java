@@ -2,9 +2,13 @@ package com.pacto.api.auth.service;
 
 import com.pacto.api.auth.dto.LoginRequest;
 import com.pacto.api.auth.dto.SignupRequest;
+import com.pacto.api.auth.entity.AdvertiserProfile;
+import com.pacto.api.auth.entity.BloggerProfile;
 import com.pacto.api.auth.entity.Role;
 import com.pacto.api.auth.entity.User;
 import com.pacto.api.auth.jwt.JwtProvider;
+import com.pacto.api.auth.repository.AdvertiserProfileRepository;
+import com.pacto.api.auth.repository.BloggerProfileRepository;
 import com.pacto.api.auth.repository.UserRepository;
 import com.pacto.api.common.exception.DuplicateEmailException;
 import com.pacto.api.common.exception.EmailNotFoundException;
@@ -37,6 +41,8 @@ class AuthServiceTest {
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtProvider jwtProvider;
     @Mock WalletRepository walletRepository;
+    @Mock BloggerProfileRepository bloggerProfileRepository;
+    @Mock AdvertiserProfileRepository advertiserProfileRepository;
     @InjectMocks AuthService authService;
 
     @Test
@@ -61,6 +67,51 @@ class AuthServiceTest {
     }
 
     @Test
+    void signup_블로거는_블로거_프로필을_생성한다() {
+        SignupRequest request = new SignupRequest();
+        ReflectionTestUtils.setField(request, "email", "blogger@test.com");
+        ReflectionTestUtils.setField(request, "password", "password");
+        ReflectionTestUtils.setField(request, "role", "BLOGGER");
+
+        when(userRepository.existsByEmail("blogger@test.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
+
+        User savedUser = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        authService.signup(request);
+
+        ArgumentCaptor<BloggerProfile> captor = ArgumentCaptor.forClass(BloggerProfile.class);
+        verify(bloggerProfileRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isEqualTo(savedUser);
+        assertThat(captor.getValue().getNickname()).isNull();
+        verify(advertiserProfileRepository, never()).save(any());
+    }
+
+    @Test
+    void signup_광고주는_광고주_프로필을_생성한다() {
+        SignupRequest request = new SignupRequest();
+        ReflectionTestUtils.setField(request, "email", "advertiser@test.com");
+        ReflectionTestUtils.setField(request, "password", "password");
+        ReflectionTestUtils.setField(request, "role", "ADVERTISER");
+
+        when(userRepository.existsByEmail("advertiser@test.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
+
+        User savedUser = User.builder()
+                .userId(1L).email("advertiser@test.com").password("encoded").role(Role.ADVERTISER).build();
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        authService.signup(request);
+
+        ArgumentCaptor<AdvertiserProfile> captor = ArgumentCaptor.forClass(AdvertiserProfile.class);
+        verify(advertiserProfileRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isEqualTo(savedUser);
+        verify(bloggerProfileRepository, never()).save(any());
+    }
+
+    @Test
     void signup_이메일_중복_예외() {
         SignupRequest request = new SignupRequest();
         ReflectionTestUtils.setField(request, "email", "dup@test.com");
@@ -74,6 +125,8 @@ class AuthServiceTest {
                 .hasMessage("이미 존재하는 이메일입니다.");
 
         verify(walletRepository, never()).save(any());
+        verify(bloggerProfileRepository, never()).save(any());
+        verify(advertiserProfileRepository, never()).save(any());
     }
 
     @Test
