@@ -2,8 +2,10 @@ package com.pacto.api.campaign.service;
 
 import com.pacto.api.application.repository.ApplicationRepository;
 import com.pacto.api.campaign.domain.Campaign;
+import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.dto.CampaignRequestDto;
 import com.pacto.api.campaign.repository.CampaignRepository;
+import com.pacto.api.common.exception.CampaignAccessDeniedException;
 import com.pacto.api.escrow.service.EscrowLockService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,12 +16,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,13 +60,28 @@ class CampaignServiceTest {
     }
 
     @Test
-    void closeCampaign은_미선정_슬롯_예산을_환불한다() {
+    void closeCampaign은_소유자의_캠페인을_마감한다() {
         Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
         ReflectionTestUtils.setField(campaign, "campaignId", 10L);
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
 
-        campaignService.closeCampaign(10L);
+        Campaign result = campaignService.closeCampaign(10L, 1L);
 
+        assertThat(result.getStatus()).isEqualTo(CampaignStatus.CLOSED);
+        verify(escrowLockService, never()).refundUnusedBudget(10L);
+    }
+
+    @Test
+    void proceedCampaign은_미선정_슬롯_예산을_환불한다() {
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
+        ReflectionTestUtils.setField(campaign, "campaignId", 10L);
+        campaign.closeManually();
+        when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+        when(applicationRepository.findByCampaignIdAndStatus(any(), any())).thenReturn(List.of());
+
+        Campaign result = campaignService.proceedCampaign(10L, 1L);
+
+        assertThat(result.getStatus()).isEqualTo(CampaignStatus.IN_PROGRESS);
         verify(escrowLockService).refundUnusedBudget(10L);
     }
 
@@ -69,9 +90,48 @@ class CampaignServiceTest {
         Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
         ReflectionTestUtils.setField(campaign, "campaignId", 10L);
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+        when(applicationRepository.findByCampaignIdAndStatus(any(), any())).thenReturn(List.of());
 
-        campaignService.cancelCampaign(10L);
+        Campaign result = campaignService.cancelCampaign(10L, 1L);
 
+        assertThat(result.getStatus()).isEqualTo(CampaignStatus.CANCELLED);
         verify(escrowLockService).refundUnusedBudget(10L);
+    }
+
+    @Test
+    void closeCampaign은_소유자가_아니면_거부한다() {
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
+        when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+
+        assertThatThrownBy(() -> campaignService.closeCampaign(10L, 2L))
+                .isInstanceOf(CampaignAccessDeniedException.class);
+
+        assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.RECRUITING);
+        verifyNoInteractions(escrowLockService, applicationRepository);
+    }
+
+    @Test
+    void proceedCampaign은_소유자가_아니면_거부한다() {
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
+        campaign.closeManually();
+        when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+
+        assertThatThrownBy(() -> campaignService.proceedCampaign(10L, 2L))
+                .isInstanceOf(CampaignAccessDeniedException.class);
+
+        assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.CLOSED);
+        verifyNoInteractions(escrowLockService, applicationRepository);
+    }
+
+    @Test
+    void cancelCampaign은_소유자가_아니면_거부한다() {
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
+        when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+
+        assertThatThrownBy(() -> campaignService.cancelCampaign(10L, 2L))
+                .isInstanceOf(CampaignAccessDeniedException.class);
+
+        assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.RECRUITING);
+        verifyNoInteractions(escrowLockService, applicationRepository);
     }
 }
