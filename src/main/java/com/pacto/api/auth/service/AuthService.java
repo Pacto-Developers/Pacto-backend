@@ -4,9 +4,13 @@ import com.pacto.api.auth.dto.LoginRequest;
 import com.pacto.api.auth.dto.LoginResponse;
 import com.pacto.api.auth.dto.MeResponse;
 import com.pacto.api.auth.dto.SignupRequest;
+import com.pacto.api.auth.entity.AdvertiserProfile;
+import com.pacto.api.auth.entity.BloggerProfile;
 import com.pacto.api.auth.entity.Role;
 import com.pacto.api.auth.entity.User;
 import com.pacto.api.auth.jwt.JwtProvider;
+import com.pacto.api.auth.repository.AdvertiserProfileRepository;
+import com.pacto.api.auth.repository.BloggerProfileRepository;
 import com.pacto.api.auth.repository.UserRepository;
 import com.pacto.api.common.exception.DuplicateEmailException;
 import com.pacto.api.common.exception.EmailNotFoundException;
@@ -28,6 +32,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final WalletRepository walletRepository;
+    private final BloggerProfileRepository bloggerProfileRepository;
+    private final AdvertiserProfileRepository advertiserProfileRepository;
 
     @Transactional
     public void signup(SignupRequest request) {
@@ -44,7 +50,17 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
+        createProfile(savedUser);
         walletRepository.save(Wallet.create(savedUser.getUserId()));
+    }
+
+    private void createProfile(User user) {
+        if (user.getRole() == Role.BLOGGER) {
+            bloggerProfileRepository.save(BloggerProfile.create(user));
+            return;
+        }
+
+        advertiserProfileRepository.save(AdvertiserProfile.create(user));
     }
 
     @Transactional(readOnly = true)
