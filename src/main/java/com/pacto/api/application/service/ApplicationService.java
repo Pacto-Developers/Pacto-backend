@@ -56,8 +56,8 @@ public class ApplicationService {
         if (!campaign.getAdvertiserId().equals(advertiserId)) {
             throw new CampaignAccessDeniedException();
         }
-        if (campaign.getStatus() != CampaignStatus.RECRUITING && campaign.getStatus() != CampaignStatus.CLOSED) {
-            throw new CampaignNotOpenException();
+        if (campaign.getStatus() != CampaignStatus.CLOSED) {
+            throw new CampaignNotOpenException("모집 마감된 캠페인에서만 선정할 수 있습니다.");
         }
 
         application.accept();
