@@ -72,6 +72,16 @@ class AuthServiceTest {
         ReflectionTestUtils.setField(request, "email", "blogger@test.com");
         ReflectionTestUtils.setField(request, "password", "password");
         ReflectionTestUtils.setField(request, "role", "BLOGGER");
+        SignupRequest.BloggerProfileRequest bloggerProfileRequest = new SignupRequest.BloggerProfileRequest();
+        ReflectionTestUtils.setField(bloggerProfileRequest, "name", "홍길동");
+        ReflectionTestUtils.setField(bloggerProfileRequest, "blogUrl", "https://blog.example.com");
+        ReflectionTestUtils.setField(bloggerProfileRequest, "contact", "010-1234-5678");
+        ReflectionTestUtils.setField(bloggerProfileRequest, "nickname", "길동");
+        ReflectionTestUtils.setField(bloggerProfileRequest, "bankName", "국민은행");
+        ReflectionTestUtils.setField(bloggerProfileRequest, "accountNumber", "123-456");
+        ReflectionTestUtils.setField(bloggerProfileRequest, "accountHolder", "홍길동");
+        ReflectionTestUtils.setField(bloggerProfileRequest, "profileImageUrl", "https://image.example.com/profile.png");
+        ReflectionTestUtils.setField(request, "bloggerProfile", bloggerProfileRequest);
 
         when(userRepository.existsByEmail("blogger@test.com")).thenReturn(false);
         when(passwordEncoder.encode("password")).thenReturn("encoded");
@@ -85,8 +95,37 @@ class AuthServiceTest {
         ArgumentCaptor<BloggerProfile> captor = ArgumentCaptor.forClass(BloggerProfile.class);
         verify(bloggerProfileRepository).save(captor.capture());
         assertThat(captor.getValue().getUser()).isEqualTo(savedUser);
-        assertThat(captor.getValue().getNickname()).isNull();
+        assertThat(captor.getValue().getName()).isEqualTo("홍길동");
+        assertThat(captor.getValue().getBlogUrl()).isEqualTo("https://blog.example.com");
+        assertThat(captor.getValue().getContact()).isEqualTo("010-1234-5678");
+        assertThat(captor.getValue().getNickname()).isEqualTo("길동");
+        assertThat(captor.getValue().getBankName()).isEqualTo("국민은행");
+        assertThat(captor.getValue().getAccountNumber()).isEqualTo("123-456");
+        assertThat(captor.getValue().getAccountHolder()).isEqualTo("홍길동");
+        assertThat(captor.getValue().getProfileImageUrl()).isEqualTo("https://image.example.com/profile.png");
         verify(advertiserProfileRepository, never()).save(any());
+    }
+
+    @Test
+    void signup_블로거_프로필_정보가_없어도_빈_프로필을_생성한다() {
+        SignupRequest request = new SignupRequest();
+        ReflectionTestUtils.setField(request, "email", "empty-blogger@test.com");
+        ReflectionTestUtils.setField(request, "password", "password");
+        ReflectionTestUtils.setField(request, "role", "BLOGGER");
+
+        when(userRepository.existsByEmail("empty-blogger@test.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded");
+
+        User savedUser = User.builder()
+                .userId(1L).email("empty-blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        authService.signup(request);
+
+        ArgumentCaptor<BloggerProfile> captor = ArgumentCaptor.forClass(BloggerProfile.class);
+        verify(bloggerProfileRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isEqualTo(savedUser);
+        assertThat(captor.getValue().getNickname()).isNull();
     }
 
     @Test
@@ -95,6 +134,16 @@ class AuthServiceTest {
         ReflectionTestUtils.setField(request, "email", "advertiser@test.com");
         ReflectionTestUtils.setField(request, "password", "password");
         ReflectionTestUtils.setField(request, "role", "ADVERTISER");
+        SignupRequest.AdvertiserProfileRequest advertiserProfileRequest = new SignupRequest.AdvertiserProfileRequest();
+        ReflectionTestUtils.setField(advertiserProfileRequest, "managerName", "김담당");
+        ReflectionTestUtils.setField(advertiserProfileRequest, "companyName", "팩토컴퍼니");
+        ReflectionTestUtils.setField(advertiserProfileRequest, "businessNumber", "123-45-67890");
+        ReflectionTestUtils.setField(advertiserProfileRequest, "contact", "02-1234-5678");
+        ReflectionTestUtils.setField(advertiserProfileRequest, "brandName", "팩토");
+        ReflectionTestUtils.setField(advertiserProfileRequest, "bankName", "신한은행");
+        ReflectionTestUtils.setField(advertiserProfileRequest, "accountNumber", "987-654");
+        ReflectionTestUtils.setField(advertiserProfileRequest, "accountHolder", "팩토컴퍼니");
+        ReflectionTestUtils.setField(request, "advertiserProfile", advertiserProfileRequest);
 
         when(userRepository.existsByEmail("advertiser@test.com")).thenReturn(false);
         when(passwordEncoder.encode("password")).thenReturn("encoded");
@@ -108,6 +157,14 @@ class AuthServiceTest {
         ArgumentCaptor<AdvertiserProfile> captor = ArgumentCaptor.forClass(AdvertiserProfile.class);
         verify(advertiserProfileRepository).save(captor.capture());
         assertThat(captor.getValue().getUser()).isEqualTo(savedUser);
+        assertThat(captor.getValue().getManagerName()).isEqualTo("김담당");
+        assertThat(captor.getValue().getCompanyName()).isEqualTo("팩토컴퍼니");
+        assertThat(captor.getValue().getBusinessNumber()).isEqualTo("123-45-67890");
+        assertThat(captor.getValue().getContact()).isEqualTo("02-1234-5678");
+        assertThat(captor.getValue().getBrandName()).isEqualTo("팩토");
+        assertThat(captor.getValue().getBankName()).isEqualTo("신한은행");
+        assertThat(captor.getValue().getAccountNumber()).isEqualTo("987-654");
+        assertThat(captor.getValue().getAccountHolder()).isEqualTo("팩토컴퍼니");
         verify(bloggerProfileRepository, never()).save(any());
     }
 
@@ -221,5 +278,51 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.getMe(1L))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("유저를 찾을 수 없습니다.");
+    }
+
+    @Test
+    void getMe_기존_블로거_프로필이_없으면_빈_프로필을_생성한다() {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.empty());
+
+        authService.getMe(1L);
+
+        ArgumentCaptor<BloggerProfile> captor = ArgumentCaptor.forClass(BloggerProfile.class);
+        verify(bloggerProfileRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isEqualTo(user);
+        verify(advertiserProfileRepository, never()).save(any());
+    }
+
+    @Test
+    void getMe_기존_광고주_프로필이_없으면_빈_프로필을_생성한다() {
+        User user = User.builder()
+                .userId(1L).email("advertiser@test.com").password("encoded").role(Role.ADVERTISER).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(advertiserProfileRepository.findById(1L)).thenReturn(Optional.empty());
+
+        authService.getMe(1L);
+
+        ArgumentCaptor<AdvertiserProfile> captor = ArgumentCaptor.forClass(AdvertiserProfile.class);
+        verify(advertiserProfileRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isEqualTo(user);
+        verify(bloggerProfileRepository, never()).save(any());
+    }
+
+    @Test
+    void getMe_프로필이_이미_있으면_새로_생성하지_않는다() {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile profile = BloggerProfile.create(user);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+
+        authService.getMe(1L);
+
+        verify(bloggerProfileRepository, never()).save(any());
     }
 }

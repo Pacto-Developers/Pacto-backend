@@ -50,17 +50,80 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        createProfile(savedUser);
+        createProfile(savedUser, request);
         walletRepository.save(Wallet.create(savedUser.getUserId()));
     }
 
-    private void createProfile(User user) {
+    private void createProfile(User user, SignupRequest request) {
         if (user.getRole() == Role.BLOGGER) {
-            bloggerProfileRepository.save(BloggerProfile.create(user));
+            BloggerProfile profile = BloggerProfile.create(user);
+            applyBloggerProfile(profile, request.getBloggerProfile());
+            bloggerProfileRepository.save(profile);
             return;
         }
 
-        advertiserProfileRepository.save(AdvertiserProfile.create(user));
+        AdvertiserProfile profile = AdvertiserProfile.create(user);
+        applyAdvertiserProfile(profile, request.getAdvertiserProfile());
+        advertiserProfileRepository.save(profile);
+    }
+
+    private BloggerProfile getOrCreateBloggerProfile(User user) {
+        return bloggerProfileRepository.findById(user.getUserId())
+                .orElseGet(() -> bloggerProfileRepository.save(BloggerProfile.create(user)));
+    }
+
+    private AdvertiserProfile getOrCreateAdvertiserProfile(User user) {
+        return advertiserProfileRepository.findById(user.getUserId())
+                .orElseGet(() -> advertiserProfileRepository.save(AdvertiserProfile.create(user)));
+    }
+
+    private void ensureProfile(User user) {
+        if (user.getRole() == Role.BLOGGER) {
+            getOrCreateBloggerProfile(user);
+            return;
+        }
+
+        getOrCreateAdvertiserProfile(user);
+    }
+
+    private void applyBloggerProfile(
+            BloggerProfile profile,
+            SignupRequest.BloggerProfileRequest request
+    ) {
+        if (request == null) {
+            return;
+        }
+
+        profile.updateProfile(
+                request.getName(),
+                request.getBlogUrl(),
+                request.getContact(),
+                request.getNickname(),
+                request.getBankName(),
+                request.getAccountNumber(),
+                request.getAccountHolder(),
+                request.getProfileImageUrl()
+        );
+    }
+
+    private void applyAdvertiserProfile(
+            AdvertiserProfile profile,
+            SignupRequest.AdvertiserProfileRequest request
+    ) {
+        if (request == null) {
+            return;
+        }
+
+        profile.updateProfile(
+                request.getManagerName(),
+                request.getCompanyName(),
+                request.getBusinessNumber(),
+                request.getContact(),
+                request.getBrandName(),
+                request.getBankName(),
+                request.getAccountNumber(),
+                request.getAccountHolder()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -87,11 +150,13 @@ public class AuthService {
         return new LoginResponse(accessToken);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public MeResponse getMe(Long userId) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
+
+        ensureProfile(user);
 
         return new MeResponse(
                 user.getUserId(),
