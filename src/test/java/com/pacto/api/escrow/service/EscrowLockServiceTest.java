@@ -143,6 +143,48 @@ class EscrowLockServiceTest {
     }
 
     @Test
+    void refundUnusedBudget은_연속_호출해도_미선정_예산을_한_번만_환불한다() {
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
+        ReflectionTestUtils.setField(campaign, "campaignId", 10L);
+        campaign.decreaseSlot();
+        Wallet advertiserWallet = Wallet.create(1L);
+        ReflectionTestUtils.setField(advertiserWallet, "walletId", 100L);
+        ReflectionTestUtils.setField(advertiserWallet, "lockedBalance", 150000);
+
+        when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
+
+        escrowLockService.refundUnusedBudget(10L);
+        escrowLockService.refundUnusedBudget(10L);
+
+        assertThat(campaign.getRemainingSlots()).isEqualTo(0);
+        assertThat(advertiserWallet.getBalance()).isEqualTo(100000);
+        assertThat(advertiserWallet.getLockedBalance()).isEqualTo(50000);
+        verify(walletRepository).findByUserId(1L);
+        verify(walletRepository).save(advertiserWallet);
+        verify(campaignRepository).save(campaign);
+        verify(pointHistoryRepository).save(any(PointHistory.class));
+    }
+
+    @Test
+    void refundUnusedBudget은_모든_슬롯이_선정되면_아무것도_저장하지_않는다() {
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
+        ReflectionTestUtils.setField(campaign, "campaignId", 10L);
+        campaign.decreaseSlot();
+        campaign.decreaseSlot();
+        campaign.decreaseSlot();
+
+        when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+
+        escrowLockService.refundUnusedBudget(10L);
+
+        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository, never()).save(any());
+        verify(pointHistoryRepository, never()).save(any());
+        verify(campaignRepository, never()).save(any());
+    }
+
+    @Test
     void lock은_캠페인이_없으면_공통_예외를_던진다() {
         when(campaignRepository.findById(10L)).thenReturn(Optional.empty());
 
