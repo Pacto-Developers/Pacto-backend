@@ -2,6 +2,7 @@ package com.pacto.api.wallet.service;
 
 import com.pacto.api.common.exception.InsufficientBalanceException;
 import com.pacto.api.common.exception.InvalidChargeAmountException;
+import com.pacto.api.common.exception.InvalidWithdrawalAmountException;
 import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.wallet.dto.PointHistoryResponse;
@@ -19,6 +20,8 @@ import com.pacto.api.wallet.repository.WithdrawalRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -152,6 +155,43 @@ class WalletServiceTest {
                 .hasMessage("잔액이 부족합니다.");
 
         verify(withdrawalRepository, never()).save(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-10000, 0, 9999})
+    void 출금신청은_10000원_미만이면_거부한다(int amount) {
+        WithdrawRequest request = new WithdrawRequest();
+        ReflectionTestUtils.setField(request, "amount", amount);
+        ReflectionTestUtils.setField(request, "bankName", "카카오뱅크");
+        ReflectionTestUtils.setField(request, "accountNumber", "111");
+
+        assertThatThrownBy(() -> walletService.requestWithdraw(1L, request))
+                .isInstanceOf(InvalidWithdrawalAmountException.class)
+                .hasMessage("출금 금액은 10,000원 이상이어야 합니다.");
+
+        verifyNoInteractions(walletRepository, withdrawalRepository, pointHistoryRepository);
+    }
+
+    @Test
+    void 출금신청은_정확히_10000원이면_허용한다() {
+        ReflectionTestUtils.setField(wallet, "balance", 10000);
+        Withdrawal savedWithdrawal = Withdrawal.create(wallet, 10000, "카카오뱅크", "111");
+        ReflectionTestUtils.setField(savedWithdrawal, "withdrawalId", 1L);
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+        when(withdrawalRepository.save(any(Withdrawal.class))).thenReturn(savedWithdrawal);
+
+        WithdrawRequest request = new WithdrawRequest();
+        ReflectionTestUtils.setField(request, "amount", 10000);
+        ReflectionTestUtils.setField(request, "bankName", "카카오뱅크");
+        ReflectionTestUtils.setField(request, "accountNumber", "111");
+
+        WithdrawResponse response = walletService.requestWithdraw(1L, request);
+
+        assertThat(response.getRequestedAmount()).isEqualTo(10000);
+        assertThat(response.getRemainingBalance()).isZero();
+        verify(walletRepository).save(wallet);
+        verify(withdrawalRepository).save(any(Withdrawal.class));
+        verify(pointHistoryRepository).save(any(PointHistory.class));
     }
 
     @Test

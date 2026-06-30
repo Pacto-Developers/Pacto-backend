@@ -3,6 +3,7 @@ package com.pacto.api.wallet.service;
 import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.exception.InsufficientBalanceException;
 import com.pacto.api.common.exception.InvalidChargeAmountException;
+import com.pacto.api.common.exception.InvalidWithdrawalAmountException;
 import com.pacto.api.common.exception.WalletNotFoundException;
 import com.pacto.api.wallet.dto.PointHistoryResponse;
 import com.pacto.api.wallet.dto.WalletResponse;
@@ -25,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class WalletService {
+
+    private static final int MIN_WITHDRAWAL_AMOUNT = 10_000;
 
     private final WalletRepository walletRepository;
     private final PointHistoryRepository pointHistoryRepository;
@@ -55,6 +58,10 @@ public class WalletService {
 
     @Transactional
     public WithdrawResponse requestWithdraw(Long userId, WithdrawRequest request) {
+        if (request.getAmount() < MIN_WITHDRAWAL_AMOUNT) {
+            throw new InvalidWithdrawalAmountException();
+        }
+
         Wallet wallet = walletRepository.findByUserId(userId)
                 .orElseThrow(WalletNotFoundException::new);
 
