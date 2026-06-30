@@ -56,6 +56,9 @@ class GlobalExceptionHandlerTest {
 
         @GetMapping("/test/invalid-payment-page")
         void throwInvalidPaymentPage() { throw new InvalidPaymentPageRequestException(); }
+
+        @GetMapping("/test/invalid-withdrawal-amount")
+        void throwInvalidWithdrawalAmount() { throw new InvalidWithdrawalAmountException(); }
     }
 
     @Test
@@ -136,5 +139,13 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("페이지는 1 이상이고, 페이지 크기는 1 이상 100 이하여야 합니다."));
+    }
+
+    @Test
+    void 최소금액_미만_출금은_400_반환() throws Exception {
+        mockMvc.perform(get("/test/invalid-withdrawal-amount"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("출금 금액은 10,000원 이상이어야 합니다."));
     }
 }
