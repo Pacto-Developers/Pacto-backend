@@ -7,6 +7,7 @@ STATE_FILE=$APP_DIR/current-color
 UPSTREAM_FILE=/etc/nginx/conf.d/pacto-upstream.conf
 AWS_REGION=ap-southeast-2
 ECR_REGISTRY=829279763575.dkr.ecr.ap-southeast-2.amazonaws.com
+DOMAIN=pacto-api.duckdns.org
 
 exec 9>/var/lock/pacto-deploy.lock
 flock -n 9 || {
@@ -113,7 +114,8 @@ fi
 systemctl reload nginx
 
 if ! curl -fsS --max-time 5 \
-  http://127.0.0.1/actuator/health | grep -q '"status":"UP"'; then
+  --resolve "$DOMAIN:443:127.0.0.1" \
+  "https://$DOMAIN/actuator/health" | grep -q '"status":"UP"'; then
   mv "$UPSTREAM_FILE.backup" "$UPSTREAM_FILE"
   nginx -t
   systemctl reload nginx
