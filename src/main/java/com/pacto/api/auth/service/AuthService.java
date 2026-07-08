@@ -77,15 +77,6 @@ public class AuthService {
                 .orElseGet(() -> advertiserProfileRepository.save(AdvertiserProfile.create(user)));
     }
 
-    private void ensureProfile(User user) {
-        if (user.getRole() == Role.BLOGGER) {
-            getOrCreateBloggerProfile(user);
-            return;
-        }
-
-        getOrCreateAdvertiserProfile(user);
-    }
-
     private void applyBloggerProfile(
             BloggerProfile profile,
             SignupRequest.BloggerProfileRequest request
@@ -156,12 +147,24 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
-        ensureProfile(user);
+        if (user.getRole() == Role.BLOGGER) {
+            BloggerProfile profile = getOrCreateBloggerProfile(user);
 
-        return new MeResponse(
+            return MeResponse.ofBlogger(
+                    user.getUserId(),
+                    user.getEmail(),
+                    user.getRole().name(),
+                    profile
+            );
+        }
+
+        AdvertiserProfile profile = getOrCreateAdvertiserProfile(user);
+
+        return MeResponse.ofAdvertiser(
                 user.getUserId(),
                 user.getEmail(),
-                user.getRole().name()
+                user.getRole().name(),
+                profile
         );
     }
 }
