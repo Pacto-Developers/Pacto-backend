@@ -23,17 +23,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CampaignService {
 
+    private static final List<CampaignStatus> HIDDEN_FROM_LIST = List.of(
+            CampaignStatus.CLOSED, CampaignStatus.CANCELLED
+    );
+
     private final CampaignRepository campaignRepository;
     private final ApplicationRepository applicationRepository;
     private final EscrowLockService escrowLockService;
 
-    // 캠페인 목록 조회
+    // 캠페인 목록 조회 (필터 없으면 취소/마감 캠페인 제외)
     @Transactional(readOnly = true)
     public Page<Campaign> getCampaigns(CampaignStatus status, Pageable pageable) {
         if (status != null) {
             return campaignRepository.findByStatus(status, pageable);
         }
-        return campaignRepository.findAll(pageable);
+        return campaignRepository.findByStatusNotIn(HIDDEN_FROM_LIST, pageable);
     }
 
     // 캠페인 상세 조회
