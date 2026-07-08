@@ -1,0 +1,19 @@
+services:
+  api:
+    image: ${IMAGE_URI}
+    container_name: pacto-api-${APP_COLOR}
+    restart: unless-stopped
+
+    env_file:
+      - /opt/pacto/.env
+
+    environment:
+      JAVA_TOOL_OPTIONS: >-
+        -XX:MaxRAMPercentage=60.0
+        -XX:+ExitOnOutOfMemoryError
+
+    ports:
+      - "127.0.0.1:${APP_PORT}:8080"
+
+    mem_limit: 700m
+    stop_grace_period: 30s
