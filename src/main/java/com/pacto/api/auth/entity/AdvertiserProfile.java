@@ -82,4 +82,28 @@ public class AdvertiserProfile {
         this.accountNumber = accountNumber;
         this.accountHolder = accountHolder;
     }
+
+    public void updateProfilePartially(
+            String managerName,
+            String companyName,
+            String businessNumber,
+            String contact,
+            String brandName,
+            String bankName,
+            String accountNumber,
+            String accountHolder
+    ) {
+        this.managerName = updateIfPresent(this.managerName, managerName);
+        this.companyName = updateIfPresent(this.companyName, companyName);
+        this.businessNumber = updateIfPresent(this.businessNumber, businessNumber);
+        this.contact = updateIfPresent(this.contact, contact);
+        this.brandName = updateIfPresent(this.brandName, brandName);
+        this.bankName = updateIfPresent(this.bankName, bankName);
+        this.accountNumber = updateIfPresent(this.accountNumber, accountNumber);
+        this.accountHolder = updateIfPresent(this.accountHolder, accountHolder);
+    }
+
+    private String updateIfPresent(String currentValue, String newValue) {
+        return newValue != null ? newValue : currentValue;
+    }
 }

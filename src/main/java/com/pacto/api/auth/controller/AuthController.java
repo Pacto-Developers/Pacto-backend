@@ -3,6 +3,7 @@ package com.pacto.api.auth.controller;
 import com.pacto.api.auth.dto.LoginRequest;
 import com.pacto.api.auth.dto.LoginResponse;
 import com.pacto.api.auth.dto.MeResponse;
+import com.pacto.api.auth.dto.ProfileUpdateRequest;
 import com.pacto.api.auth.dto.SignupRequest;
 import com.pacto.api.auth.service.AuthService;
 import com.pacto.api.common.response.CommonResponse;
@@ -42,6 +43,19 @@ public class AuthController {
 
         return ResponseEntity.ok(
                 CommonResponse.success("내 정보 조회 성공", authService.getMe(userId))
+        );
+    }
+
+    @PatchMapping("/me/profile")
+    public ResponseEntity<CommonResponse<MeResponse>> updateMyProfile(
+            Authentication authentication,
+            @RequestBody ProfileUpdateRequest request
+    ) {
+
+        Long userId = (Long) authentication.getPrincipal();
+
+        return ResponseEntity.ok(
+                CommonResponse.success("내 정보 수정 성공", authService.updateMyProfile(userId, request))
         );
     }
 }

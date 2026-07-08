@@ -3,6 +3,7 @@ package com.pacto.api.auth.service;
 import com.pacto.api.auth.dto.LoginRequest;
 import com.pacto.api.auth.dto.LoginResponse;
 import com.pacto.api.auth.dto.MeResponse;
+import com.pacto.api.auth.dto.ProfileUpdateRequest;
 import com.pacto.api.auth.dto.SignupRequest;
 import com.pacto.api.auth.entity.AdvertiserProfile;
 import com.pacto.api.auth.entity.BloggerProfile;
@@ -117,6 +118,46 @@ public class AuthService {
         );
     }
 
+    private void applyBloggerProfilePartially(
+            BloggerProfile profile,
+            ProfileUpdateRequest.BloggerProfileRequest request
+    ) {
+        if (request == null) {
+            return;
+        }
+
+        profile.updateProfilePartially(
+                request.getName(),
+                request.getBlogUrl(),
+                request.getContact(),
+                request.getNickname(),
+                request.getBankName(),
+                request.getAccountNumber(),
+                request.getAccountHolder(),
+                request.getProfileImageUrl()
+        );
+    }
+
+    private void applyAdvertiserProfilePartially(
+            AdvertiserProfile profile,
+            ProfileUpdateRequest.AdvertiserProfileRequest request
+    ) {
+        if (request == null) {
+            return;
+        }
+
+        profile.updateProfilePartially(
+                request.getManagerName(),
+                request.getCompanyName(),
+                request.getBusinessNumber(),
+                request.getContact(),
+                request.getBrandName(),
+                request.getBankName(),
+                request.getAccountNumber(),
+                request.getAccountHolder()
+        );
+    }
+
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
 
@@ -159,6 +200,35 @@ public class AuthService {
         }
 
         AdvertiserProfile profile = getOrCreateAdvertiserProfile(user);
+
+        return MeResponse.ofAdvertiser(
+                user.getUserId(),
+                user.getEmail(),
+                user.getRole().name(),
+                profile
+        );
+    }
+
+    @Transactional
+    public MeResponse updateMyProfile(Long userId, ProfileUpdateRequest request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (user.getRole() == Role.BLOGGER) {
+            BloggerProfile profile = getOrCreateBloggerProfile(user);
+            applyBloggerProfilePartially(profile, request.getBloggerProfile());
+
+            return MeResponse.ofBlogger(
+                    user.getUserId(),
+                    user.getEmail(),
+                    user.getRole().name(),
+                    profile
+            );
+        }
+
+        AdvertiserProfile profile = getOrCreateAdvertiserProfile(user);
+        applyAdvertiserProfilePartially(profile, request.getAdvertiserProfile());
 
         return MeResponse.ofAdvertiser(
                 user.getUserId(),
