@@ -11,6 +11,7 @@ import java.util.List;
 
 public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     Page<Campaign> findByStatus(CampaignStatus status, Pageable pageable);
+    Page<Campaign> findByStatusNotIn(List<CampaignStatus> statuses, Pageable pageable);
     List<Campaign> findByAdvertiserId(Long advertiserId);
     long countByAdvertiserIdAndStatus(Long advertiserId, CampaignStatus status);
     List<Campaign> findByDeadlineBeforeAndStatus(LocalDateTime deadline, CampaignStatus status);

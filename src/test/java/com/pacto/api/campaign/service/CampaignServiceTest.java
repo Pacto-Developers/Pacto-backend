@@ -13,6 +13,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -35,6 +38,36 @@ class CampaignServiceTest {
     @Mock ApplicationRepository applicationRepository;
     @Mock EscrowLockService escrowLockService;
     @InjectMocks CampaignService campaignService;
+
+    @Test
+    void getCampaigns은_상태_필터가_없으면_마감_취소_캠페인을_제외한다() {
+        Pageable pageable = Pageable.ofSize(20);
+        Page<Campaign> page = new PageImpl<>(List.of());
+        when(campaignRepository.findByStatusNotIn(
+                List.of(CampaignStatus.CLOSED, CampaignStatus.CANCELLED), pageable
+        )).thenReturn(page);
+
+        Page<Campaign> result = campaignService.getCampaigns(null, pageable);
+
+        assertThat(result).isSameAs(page);
+        verify(campaignRepository).findByStatusNotIn(
+                List.of(CampaignStatus.CLOSED, CampaignStatus.CANCELLED), pageable
+        );
+        verify(campaignRepository, never()).findAll(any(Pageable.class));
+    }
+
+    @Test
+    void getCampaigns은_상태_필터가_있으면_해당_상태만_조회한다() {
+        Pageable pageable = Pageable.ofSize(20);
+        Page<Campaign> page = new PageImpl<>(List.of());
+        when(campaignRepository.findByStatus(CampaignStatus.CLOSED, pageable)).thenReturn(page);
+
+        Page<Campaign> result = campaignService.getCampaigns(CampaignStatus.CLOSED, pageable);
+
+        assertThat(result).isSameAs(page);
+        verify(campaignRepository).findByStatus(CampaignStatus.CLOSED, pageable);
+        verify(campaignRepository, never()).findByStatusNotIn(any(), any());
+    }
 
     @Test
     void createCampaign은_캠페인_생성_후_총_예산을_잠근다() {
