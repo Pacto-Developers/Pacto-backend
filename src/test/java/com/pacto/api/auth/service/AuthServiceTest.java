@@ -1,6 +1,8 @@
 package com.pacto.api.auth.service;
 
 import com.pacto.api.auth.dto.LoginRequest;
+import com.pacto.api.auth.dto.MeResponse;
+import com.pacto.api.auth.dto.ProfileUpdateRequest;
 import com.pacto.api.auth.dto.SignupRequest;
 import com.pacto.api.auth.entity.AdvertiserProfile;
 import com.pacto.api.auth.entity.BloggerProfile;
@@ -284,15 +286,19 @@ class AuthServiceTest {
     void getMe_기존_블로거_프로필이_없으면_빈_프로필을_생성한다() {
         User user = User.builder()
                 .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile createdProfile = BloggerProfile.create(user);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.empty());
+        when(bloggerProfileRepository.save(any(BloggerProfile.class))).thenReturn(createdProfile);
 
-        authService.getMe(1L);
+        MeResponse response = authService.getMe(1L);
 
         ArgumentCaptor<BloggerProfile> captor = ArgumentCaptor.forClass(BloggerProfile.class);
         verify(bloggerProfileRepository).save(captor.capture());
         assertThat(captor.getValue().getUser()).isEqualTo(user);
+        assertThat(response.getBloggerProfile()).isNotNull();
+        assertThat(response.getAdvertiserProfile()).isNull();
         verify(advertiserProfileRepository, never()).save(any());
     }
 
@@ -300,15 +306,19 @@ class AuthServiceTest {
     void getMe_기존_광고주_프로필이_없으면_빈_프로필을_생성한다() {
         User user = User.builder()
                 .userId(1L).email("advertiser@test.com").password("encoded").role(Role.ADVERTISER).build();
+        AdvertiserProfile createdProfile = AdvertiserProfile.create(user);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(advertiserProfileRepository.findById(1L)).thenReturn(Optional.empty());
+        when(advertiserProfileRepository.save(any(AdvertiserProfile.class))).thenReturn(createdProfile);
 
-        authService.getMe(1L);
+        MeResponse response = authService.getMe(1L);
 
         ArgumentCaptor<AdvertiserProfile> captor = ArgumentCaptor.forClass(AdvertiserProfile.class);
         verify(advertiserProfileRepository).save(captor.capture());
         assertThat(captor.getValue().getUser()).isEqualTo(user);
+        assertThat(response.getBloggerProfile()).isNull();
+        assertThat(response.getAdvertiserProfile()).isNotNull();
         verify(bloggerProfileRepository, never()).save(any());
     }
 
@@ -321,8 +331,186 @@ class AuthServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
 
-        authService.getMe(1L);
+        MeResponse response = authService.getMe(1L);
 
         verify(bloggerProfileRepository, never()).save(any());
+        assertThat(response.getBloggerProfile()).isNotNull();
+    }
+
+    @Test
+    void getMe_블로거는_블로거_프로필_정보를_반환한다() {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile profile = BloggerProfile.create(user);
+        profile.updateProfile(
+                "홍길동",
+                "https://blog.example.com",
+                "010-1234-5678",
+                "길동",
+                "국민은행",
+                "123-456",
+                "홍길동",
+                "https://image.example.com/profile.png"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+
+        MeResponse response = authService.getMe(1L);
+
+        assertThat(response.getUserId()).isEqualTo(1L);
+        assertThat(response.getEmail()).isEqualTo("blogger@test.com");
+        assertThat(response.getRole()).isEqualTo("BLOGGER");
+        assertThat(response.getAdvertiserProfile()).isNull();
+        assertThat(response.getBloggerProfile().getName()).isEqualTo("홍길동");
+        assertThat(response.getBloggerProfile().getBlogUrl()).isEqualTo("https://blog.example.com");
+        assertThat(response.getBloggerProfile().getContact()).isEqualTo("010-1234-5678");
+        assertThat(response.getBloggerProfile().getNickname()).isEqualTo("길동");
+        assertThat(response.getBloggerProfile().getBankName()).isEqualTo("국민은행");
+        assertThat(response.getBloggerProfile().getAccountNumber()).isEqualTo("123-456");
+        assertThat(response.getBloggerProfile().getAccountHolder()).isEqualTo("홍길동");
+        assertThat(response.getBloggerProfile().getProfileImageUrl()).isEqualTo("https://image.example.com/profile.png");
+    }
+
+    @Test
+    void getMe_광고주는_광고주_프로필_정보를_반환한다() {
+        User user = User.builder()
+                .userId(1L).email("advertiser@test.com").password("encoded").role(Role.ADVERTISER).build();
+        AdvertiserProfile profile = AdvertiserProfile.create(user);
+        profile.updateProfile(
+                "김담당",
+                "팩토컴퍼니",
+                "123-45-67890",
+                "02-1234-5678",
+                "팩토",
+                "신한은행",
+                "987-654",
+                "팩토컴퍼니"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(advertiserProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+
+        MeResponse response = authService.getMe(1L);
+
+        assertThat(response.getUserId()).isEqualTo(1L);
+        assertThat(response.getEmail()).isEqualTo("advertiser@test.com");
+        assertThat(response.getRole()).isEqualTo("ADVERTISER");
+        assertThat(response.getBloggerProfile()).isNull();
+        assertThat(response.getAdvertiserProfile().getManagerName()).isEqualTo("김담당");
+        assertThat(response.getAdvertiserProfile().getCompanyName()).isEqualTo("팩토컴퍼니");
+        assertThat(response.getAdvertiserProfile().getBusinessNumber()).isEqualTo("123-45-67890");
+        assertThat(response.getAdvertiserProfile().getContact()).isEqualTo("02-1234-5678");
+        assertThat(response.getAdvertiserProfile().getBrandName()).isEqualTo("팩토");
+        assertThat(response.getAdvertiserProfile().getBankName()).isEqualTo("신한은행");
+        assertThat(response.getAdvertiserProfile().getAccountNumber()).isEqualTo("987-654");
+        assertThat(response.getAdvertiserProfile().getAccountHolder()).isEqualTo("팩토컴퍼니");
+    }
+
+    @Test
+    void updateMyProfile_블로거는_블로거_프로필을_부분_수정한다() {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile profile = BloggerProfile.create(user);
+        profile.updateProfile(
+                "홍길동",
+                "https://old-blog.example.com",
+                "010-0000-0000",
+                "기존닉네임",
+                "국민은행",
+                "123-456",
+                "홍길동",
+                "https://image.example.com/old.png"
+        );
+
+        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        ProfileUpdateRequest.BloggerProfileRequest bloggerProfileRequest =
+                new ProfileUpdateRequest.BloggerProfileRequest();
+        ReflectionTestUtils.setField(bloggerProfileRequest, "nickname", "새닉네임");
+        ReflectionTestUtils.setField(bloggerProfileRequest, "blogUrl", "https://new-blog.example.com");
+        ReflectionTestUtils.setField(request, "bloggerProfile", bloggerProfileRequest);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+
+        MeResponse response = authService.updateMyProfile(1L, request);
+
+        assertThat(response.getBloggerProfile().getName()).isEqualTo("홍길동");
+        assertThat(response.getBloggerProfile().getNickname()).isEqualTo("새닉네임");
+        assertThat(response.getBloggerProfile().getBlogUrl()).isEqualTo("https://new-blog.example.com");
+        assertThat(response.getBloggerProfile().getContact()).isEqualTo("010-0000-0000");
+        assertThat(response.getBloggerProfile().getBankName()).isEqualTo("국민은행");
+        assertThat(response.getAdvertiserProfile()).isNull();
+    }
+
+    @Test
+    void updateMyProfile_광고주는_광고주_프로필을_부분_수정한다() {
+        User user = User.builder()
+                .userId(1L).email("advertiser@test.com").password("encoded").role(Role.ADVERTISER).build();
+        AdvertiserProfile profile = AdvertiserProfile.create(user);
+        profile.updateProfile(
+                "기존담당",
+                "기존회사",
+                "123-45-67890",
+                "02-0000-0000",
+                "기존브랜드",
+                "신한은행",
+                "987-654",
+                "기존회사"
+        );
+
+        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        ProfileUpdateRequest.AdvertiserProfileRequest advertiserProfileRequest =
+                new ProfileUpdateRequest.AdvertiserProfileRequest();
+        ReflectionTestUtils.setField(advertiserProfileRequest, "managerName", "새담당");
+        ReflectionTestUtils.setField(advertiserProfileRequest, "brandName", "새브랜드");
+        ReflectionTestUtils.setField(request, "advertiserProfile", advertiserProfileRequest);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(advertiserProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+
+        MeResponse response = authService.updateMyProfile(1L, request);
+
+        assertThat(response.getAdvertiserProfile().getManagerName()).isEqualTo("새담당");
+        assertThat(response.getAdvertiserProfile().getCompanyName()).isEqualTo("기존회사");
+        assertThat(response.getAdvertiserProfile().getBusinessNumber()).isEqualTo("123-45-67890");
+        assertThat(response.getAdvertiserProfile().getBrandName()).isEqualTo("새브랜드");
+        assertThat(response.getAdvertiserProfile().getBankName()).isEqualTo("신한은행");
+        assertThat(response.getBloggerProfile()).isNull();
+    }
+
+    @Test
+    void updateMyProfile_기존_프로필이_없으면_생성한_뒤_수정한다() {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile createdProfile = BloggerProfile.create(user);
+
+        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        ProfileUpdateRequest.BloggerProfileRequest bloggerProfileRequest =
+                new ProfileUpdateRequest.BloggerProfileRequest();
+        ReflectionTestUtils.setField(bloggerProfileRequest, "nickname", "새닉네임");
+        ReflectionTestUtils.setField(request, "bloggerProfile", bloggerProfileRequest);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.empty());
+        when(bloggerProfileRepository.save(any(BloggerProfile.class))).thenReturn(createdProfile);
+
+        MeResponse response = authService.updateMyProfile(1L, request);
+
+        ArgumentCaptor<BloggerProfile> captor = ArgumentCaptor.forClass(BloggerProfile.class);
+        verify(bloggerProfileRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isEqualTo(user);
+        assertThat(response.getBloggerProfile().getNickname()).isEqualTo("새닉네임");
+    }
+
+    @Test
+    void updateMyProfile_유저없음_예외() {
+        ProfileUpdateRequest request = new ProfileUpdateRequest();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.updateMyProfile(1L, request))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("유저를 찾을 수 없습니다.");
     }
 }
