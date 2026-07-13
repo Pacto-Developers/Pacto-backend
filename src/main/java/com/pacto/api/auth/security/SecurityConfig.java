@@ -53,6 +53,35 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/campaigns").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/campaigns/{campaignId}").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/portone").permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/campaigns").hasRole("ADVERTISER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/campaigns/**").hasRole("ADVERTISER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/campaigns/*/missions").hasRole("ADVERTISER")
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/payments",
+                                "/api/v1/payments/*"
+                        ).hasRole("ADVERTISER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments").hasRole("ADVERTISER")
+                        .requestMatchers(HttpMethod.PATCH,
+                                "/api/v1/applications/*/accept",
+                                "/api/v1/applications/*/reject"
+                        ).hasRole("ADVERTISER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/applications/campaign/*").hasRole("ADVERTISER")
+                        .requestMatchers(HttpMethod.PATCH,
+                                "/api/v1/missions/*/approve",
+                                "/api/v1/missions/*/reject",
+                                "/api/v1/missions/*/cancel"
+                        ).hasRole("ADVERTISER")
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/applications").hasRole("BLOGGER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/applications/*/cancel").hasRole("BLOGGER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/applications/me").hasRole("BLOGGER")
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/missions/me",
+                                "/api/v1/escrows"
+                        ).hasRole("BLOGGER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/missions/*/submit").hasRole("BLOGGER")
+
                         .requestMatchers("/api/v1/wallets/**").hasAnyRole("BLOGGER", "ADVERTISER")
                         .requestMatchers("/api/v1/advertiser/**").hasRole("ADVERTISER")
                         .anyRequest().authenticated()

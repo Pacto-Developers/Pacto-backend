@@ -122,7 +122,12 @@ public class MissionService {
 
     // 캠페인별 미션 목록 조회
     @Transactional(readOnly = true)
-    public List<Mission> getMissionsByCampaignId(Long campaignId) {
+    public List<Mission> getMissionsByCampaignId(Long campaignId, Long advertiserId) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         return missionRepository.findByCampaignId(campaignId);
     }
 
