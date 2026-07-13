@@ -103,7 +103,9 @@ public class CampaignController {
     @Operation(summary = "캠페인 미션 목록 조회")
     @GetMapping("/{campaignId}/missions")
     public ResponseEntity<?> getCampaignMissions(@PathVariable Long campaignId) {
-        List<Mission> missions = missionService.getMissionsByCampaignId(campaignId);
+        Long advertiserId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+        List<Mission> missions = missionService.getMissionsByCampaignId(campaignId, advertiserId);
         return ResponseEntity.ok(
                 CommonResponse.success("캠페인 미션 목록 조회 성공", missions)
         );
