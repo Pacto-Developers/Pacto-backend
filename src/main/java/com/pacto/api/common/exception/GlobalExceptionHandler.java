@@ -108,6 +108,30 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidNotificationPageRequestException.class)
+    public ResponseEntity<?> handleInvalidNotificationPageRequest(InvalidNotificationPageRequestException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<?> handleNotificationNotFound(NotificationNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidPushSubscriptionException.class)
+    public ResponseEntity<?> handleInvalidPushSubscription(InvalidPushSubscriptionException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(PushSubscriptionNotFoundException.class)
+    public ResponseEntity<?> handlePushSubscriptionNotFound(PushSubscriptionNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(PortOneApiException.class)
     public ResponseEntity<?> handlePortOneApiException(PortOneApiException e) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)

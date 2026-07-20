@@ -1,5 +1,7 @@
 package com.pacto.api.campaign.service;
 
+import com.pacto.api.application.domain.Application;
+import com.pacto.api.application.domain.ApplicationStatus;
 import com.pacto.api.application.repository.ApplicationRepository;
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.domain.CampaignStatus;
@@ -7,6 +9,7 @@ import com.pacto.api.campaign.dto.CampaignRequestDto;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.common.exception.CampaignAccessDeniedException;
 import com.pacto.api.escrow.service.EscrowLockService;
+import com.pacto.api.notification.service.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +40,7 @@ class CampaignServiceTest {
     @Mock CampaignRepository campaignRepository;
     @Mock ApplicationRepository applicationRepository;
     @Mock EscrowLockService escrowLockService;
+    @Mock NotificationService notificationService;
     @InjectMocks CampaignService campaignService;
 
     @Test
@@ -116,6 +120,22 @@ class CampaignServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(CampaignStatus.IN_PROGRESS);
         verify(escrowLockService).refundUnusedBudget(10L);
+    }
+
+    @Test
+    void proceedCampaign은_대기_중인_지원자를_거절하고_알림을_생성한다() {
+        Campaign campaign = new Campaign(1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now(), 3);
+        ReflectionTestUtils.setField(campaign, "campaignId", 10L);
+        campaign.closeManually();
+        Application application = new Application(10L, 2L);
+        when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+        when(applicationRepository.findByCampaignIdAndStatus(10L, ApplicationStatus.PENDING))
+                .thenReturn(List.of(application));
+
+        campaignService.proceedCampaign(10L, 1L);
+
+        assertThat(application.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
+        verify(notificationService).notifyApplicationRejected(2L, 10L, "캠페인");
     }
 
     @Test

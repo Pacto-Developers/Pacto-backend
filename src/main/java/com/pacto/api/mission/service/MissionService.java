@@ -13,6 +13,7 @@ import com.pacto.api.escrow.service.EscrowSettlementService;
 import com.pacto.api.mission.domain.Mission;
 import com.pacto.api.mission.domain.MissionStatus;
 import com.pacto.api.mission.repository.MissionRepository;
+import com.pacto.api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class MissionService {
     private final EscrowSettlementService escrowSettlementService;
     private final CampaignRepository campaignRepository;
     private final CampaignService campaignService;
+    private final NotificationService notificationService;
 
     private static final Set<MissionStatus> TERMINAL_STATUSES =
             EnumSet.of(MissionStatus.APPROVED, MissionStatus.REJECTED, MissionStatus.CANCELLED);
@@ -72,6 +74,11 @@ public class MissionService {
         mission.approve();
         escrowSettlementService.release(mission.getEscrowId());
         missionRepository.save(mission);
+        notificationService.notifyMissionApproved(
+                mission.getBloggerId(),
+                mission.getMissionId(),
+                campaign.getTitle()
+        );
         tryCompleteCampaign(mission.getCampaignId());
         return mission;
     }
@@ -89,6 +96,11 @@ public class MissionService {
         mission.reject();
         escrowSettlementService.cancel(mission.getEscrowId());
         missionRepository.save(mission);
+        notificationService.notifyMissionRejected(
+                mission.getBloggerId(),
+                mission.getMissionId(),
+                campaign.getTitle()
+        );
         tryCompleteCampaign(mission.getCampaignId());
         return mission;
     }

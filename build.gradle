@@ -40,6 +40,11 @@ dependencies {
 
 	// Actuator 헬스 체크
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// Firebase Cloud Messaging
+	implementation('com.google.firebase:firebase-admin:9.10.0') {
+		exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-xml'
+	}
 }
 
 tasks.named('test') {

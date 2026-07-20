@@ -5,3 +5,5 @@ build
 *.log
 src/main/resources/application-local.yaml
 src/main/resources/application-local.yml
+**/secrets
+**/*service-account*.json
