@@ -2,6 +2,8 @@ package com.pacto.api.common.exception;
 
 import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.escrow.exception.InvalidEscrowStateException;
+import com.pacto.api.file.exception.FileUploadException;
+import com.pacto.api.file.exception.FileValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -219,6 +221,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidCampaignStatusException.class)
     public ResponseEntity<?> handleInvalidCampaignStatus(InvalidCampaignStatusException e) {
         return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(FileValidationException.class)
+    public ResponseEntity<?> handleFileValidation(FileValidationException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(FileUploadException.class)
+    public ResponseEntity<?> handleFileUpload(FileUploadException e) {
+        return ResponseEntity.internalServerError()
                 .body(CommonResponse.failure(e.getMessage()));
     }
 }

@@ -117,7 +117,9 @@ public class MissionService {
         }
         mission.cancel();
         escrowSettlementService.cancel(mission.getEscrowId());
-        return missionRepository.save(mission);
+        missionRepository.save(mission);
+        tryCompleteCampaign(mission.getCampaignId());
+        return mission;
     }
 
     // 미션 수락 (에스크로 LOCK은 ApplicationService에서 처리)
@@ -134,7 +136,12 @@ public class MissionService {
 
     // 캠페인별 미션 목록 조회
     @Transactional(readOnly = true)
-    public List<Mission> getMissionsByCampaignId(Long campaignId) {
+    public List<Mission> getMissionsByCampaignId(Long campaignId, Long advertiserId) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(CampaignNotFoundException::new);
+        if (!campaign.getAdvertiserId().equals(advertiserId)) {
+            throw new CampaignAccessDeniedException();
+        }
         return missionRepository.findByCampaignId(campaignId);
     }
 

@@ -77,7 +77,6 @@ class CampaignServiceTest {
     void createCampaign은_캠페인_생성_후_총_예산을_잠근다() {
         CampaignRequestDto request = new CampaignRequestDto();
         ReflectionTestUtils.setField(request, "title", "캠페인");
-        ReflectionTestUtils.setField(request, "thumbnailUrl", null);
         ReflectionTestUtils.setField(request, "rewardPoint", 50000);
         ReflectionTestUtils.setField(request, "guidelines", Map.of());
         ReflectionTestUtils.setField(request, "deadline", LocalDateTime.now().plusDays(7));
