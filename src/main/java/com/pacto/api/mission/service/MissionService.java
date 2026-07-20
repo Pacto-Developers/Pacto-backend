@@ -105,7 +105,9 @@ public class MissionService {
         }
         mission.cancel();
         escrowSettlementService.cancel(mission.getEscrowId());
-        return missionRepository.save(mission);
+        missionRepository.save(mission);
+        tryCompleteCampaign(mission.getCampaignId());
+        return mission;
     }
 
     // 미션 수락 (에스크로 LOCK은 ApplicationService에서 처리)
