@@ -15,6 +15,7 @@ import com.pacto.api.escrow.service.EscrowLockService;
 import com.pacto.api.file.domain.FileCategory;
 import com.pacto.api.file.exception.FileValidationException;
 import com.pacto.api.file.service.FileUploadService;
+import com.pacto.api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,7 @@ public class CampaignService {
     private final ApplicationRepository applicationRepository;
     private final EscrowLockService escrowLockService;
     private final FileUploadService fileUploadService;
+    private final NotificationService notificationService;
 
     // 캠페인 목록 조회 (필터 없으면 취소/마감 캠페인 제외)
     @Transactional(readOnly = true)
@@ -148,7 +150,7 @@ public class CampaignService {
         }
         campaign.proceed();
         escrowLockService.refundUnusedBudget(campaignId);
-        rejectPendingApplications(campaignId);
+        rejectPendingApplications(campaign);
         return campaign;
     }
 
@@ -173,12 +175,22 @@ public class CampaignService {
         }
         campaign.cancel();
         escrowLockService.refundUnusedBudget(campaignId);
-        rejectPendingApplications(campaignId);
+        rejectPendingApplications(campaign);
         return campaign;
     }
 
-    private void rejectPendingApplications(Long campaignId) {
-        List<Application> pending = applicationRepository.findByCampaignIdAndStatus(campaignId, ApplicationStatus.PENDING);
-        pending.forEach(Application::reject);
+    private void rejectPendingApplications(Campaign campaign) {
+        List<Application> pending = applicationRepository.findByCampaignIdAndStatus(
+                campaign.getCampaignId(),
+                ApplicationStatus.PENDING
+        );
+        pending.forEach(application -> {
+            application.reject();
+            notificationService.notifyApplicationRejected(
+                    application.getBloggerId(),
+                    campaign.getCampaignId(),
+                    campaign.getTitle()
+            );
+        });
     }
 }

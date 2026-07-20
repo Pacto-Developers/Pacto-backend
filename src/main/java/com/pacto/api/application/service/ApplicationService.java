@@ -15,6 +15,7 @@ import com.pacto.api.common.exception.CampaignNotOpenException;
 import com.pacto.api.common.exception.DuplicateApplicationException;
 import com.pacto.api.escrow.service.EscrowLockService;
 import com.pacto.api.mission.service.MissionService;
+import com.pacto.api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class ApplicationService {
     private final CampaignRepository campaignRepository;
     private final EscrowLockService escrowLockService;
     private final MissionService missionService;
+    private final NotificationService notificationService;
 
     @Transactional
     public Application apply(Long campaignId, Long bloggerId) {
@@ -68,6 +70,11 @@ public class ApplicationService {
                 application.getBloggerId()
         );
         missionService.acceptMission(application.getCampaignId(), application.getBloggerId(), escrowId);
+        notificationService.notifyApplicationAccepted(
+                application.getBloggerId(),
+                campaign.getCampaignId(),
+                campaign.getTitle()
+        );
 
         return application;
     }
@@ -82,7 +89,13 @@ public class ApplicationService {
             throw new CampaignAccessDeniedException();
         }
         application.reject();
-        return applicationRepository.save(application);
+        Application savedApplication = applicationRepository.save(application);
+        notificationService.notifyApplicationRejected(
+                application.getBloggerId(),
+                campaign.getCampaignId(),
+                campaign.getTitle()
+        );
+        return savedApplication;
     }
 
     @Transactional

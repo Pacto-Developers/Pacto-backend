@@ -8,6 +8,7 @@ import com.pacto.api.escrow.service.EscrowSettlementService;
 import com.pacto.api.mission.domain.Mission;
 import com.pacto.api.mission.domain.MissionStatus;
 import com.pacto.api.mission.repository.MissionRepository;
+import com.pacto.api.notification.service.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,13 +36,12 @@ class MissionServiceTest {
     @Mock EscrowSettlementService escrowSettlementService;
     @Mock CampaignRepository campaignRepository;
     @Mock CampaignService campaignService;
+    @Mock NotificationService notificationService;
     @InjectMocks MissionService missionService;
 
     @Test
     void getMissionsByCampaignId는_캠페인_소유자의_미션만_조회한다() {
-        Campaign campaign = new Campaign(
-                1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now().plusDays(7), 3
-        );
+        Campaign campaign = campaign(1L, 10L);
         List<Mission> missions = List.of(new Mission(10L, 2L, 100L));
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
         when(missionRepository.findByCampaignId(10L)).thenReturn(missions);
@@ -53,9 +53,7 @@ class MissionServiceTest {
 
     @Test
     void getMissionsByCampaignId는_캠페인_소유자가_아니면_거부한다() {
-        Campaign campaign = new Campaign(
-                1L, "캠페인", null, 50000, Map.of(), LocalDateTime.now().plusDays(7), 3
-        );
+        Campaign campaign = campaign(1L, 10L);
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
 
         assertThatThrownBy(() -> missionService.getMissionsByCampaignId(10L, 2L))
@@ -65,7 +63,7 @@ class MissionServiceTest {
     }
 
     @Test
-    void approveMission은_마지막_미션이_승인되면_캠페인을_완료_처리한다() {
+    void approveMission은_마지막_미션이_승인되면_캠페인을_완료_처리하고_알림을_생성한다() {
         Campaign campaign = campaign(1L, 10L);
         Mission target = mission(100L, 10L, MissionStatus.SUBMITTED);
         Mission other = mission(101L, 10L, MissionStatus.APPROVED);
@@ -76,6 +74,8 @@ class MissionServiceTest {
         missionService.approveMission(100L, 1L);
 
         verify(campaignService).completeCampaign(10L);
+        verify(escrowSettlementService).release(500L);
+        verify(notificationService).notifyMissionApproved(2L, 100L, "캠페인");
     }
 
     @Test
@@ -90,10 +90,11 @@ class MissionServiceTest {
         missionService.approveMission(100L, 1L);
 
         verify(campaignService, never()).completeCampaign(any());
+        verify(notificationService).notifyMissionApproved(2L, 100L, "캠페인");
     }
 
     @Test
-    void rejectMission은_마지막_미션이_반려되면_캠페인을_완료_처리한다() {
+    void rejectMission은_마지막_미션이_반려되면_캠페인을_완료_처리하고_알림을_생성한다() {
         Campaign campaign = campaign(1L, 10L);
         Mission target = mission(100L, 10L, MissionStatus.SUBMITTED);
         Mission other = mission(101L, 10L, MissionStatus.CANCELLED);
@@ -104,6 +105,8 @@ class MissionServiceTest {
         missionService.rejectMission(100L, 1L);
 
         verify(campaignService).completeCampaign(10L);
+        verify(escrowSettlementService).cancel(500L);
+        verify(notificationService).notifyMissionRejected(2L, 100L, "캠페인");
     }
 
     @Test
@@ -118,6 +121,7 @@ class MissionServiceTest {
         missionService.rejectMission(100L, 1L);
 
         verify(campaignService, never()).completeCampaign(any());
+        verify(notificationService).notifyMissionRejected(2L, 100L, "캠페인");
     }
 
     @Test

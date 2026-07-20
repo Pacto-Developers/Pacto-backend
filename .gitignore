@@ -43,3 +43,9 @@ docs/
 ### application-local ###
 src/main/resources/application-local.yaml
 src/main/resources/application-local.yml
+
+### firebase ###
+firebase-service-account.json
+*-firebase-service-account.json
+**/secrets/
+**/*service-account*.json

@@ -48,3 +48,6 @@ management:
 
 server:
   forward-headers-strategy: framework
+
+firebase:
+  enabled: ${FIREBASE_ENABLED:true}
