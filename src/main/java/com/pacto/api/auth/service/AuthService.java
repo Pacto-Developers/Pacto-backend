@@ -16,14 +16,18 @@ import com.pacto.api.auth.repository.UserRepository;
 import com.pacto.api.common.exception.DuplicateEmailException;
 import com.pacto.api.common.exception.EmailNotFoundException;
 import com.pacto.api.common.exception.InvalidPasswordException;
+import com.pacto.api.common.exception.ProfileImageAccessDeniedException;
 import com.pacto.api.common.exception.RoleMismatchException;
 import com.pacto.api.common.exception.UserNotFoundException;
+import com.pacto.api.file.domain.FileCategory;
+import com.pacto.api.file.service.FileUploadService;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +39,7 @@ public class AuthService {
     private final WalletRepository walletRepository;
     private final BloggerProfileRepository bloggerProfileRepository;
     private final AdvertiserProfileRepository advertiserProfileRepository;
+    private final FileUploadService fileUploadService;
 
     @Transactional
     public void signup(SignupRequest request) {
@@ -207,6 +212,31 @@ public class AuthService {
                 user.getRole().name(),
                 profile
         );
+    }
+
+    @Transactional
+    public String uploadProfileImage(Long userId, MultipartFile file) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (user.getRole() != Role.BLOGGER) {
+            throw new ProfileImageAccessDeniedException();
+        }
+
+        BloggerProfile profile = getOrCreateBloggerProfile(user);
+
+        String previousImageKey = profile.getProfileImageKey();
+        String objectKey = fileUploadService.upload(FileCategory.PROFILE, userId, file);
+        profile.updateProfileImageKey(objectKey);
+
+        if (previousImageKey != null && !previousImageKey.isBlank()) {
+            // TODO: delete 실패 시 트랜잭션 전체가 롤백되어 신규 업로드까지 실패 처리됨 (캠페인 쪽도 동일 이슈).
+            //       best-effort 처리로 개선 필요 - 별도 이슈로 트래킹
+            fileUploadService.delete(previousImageKey);
+        }
+
+        return objectKey;
     }
 
     @Transactional

@@ -47,6 +47,9 @@ public class BloggerProfile {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
+    @Column(name = "profile_image_key")
+    private String profileImageKey;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -103,5 +106,9 @@ public class BloggerProfile {
 
     private String updateIfPresent(String currentValue, String newValue) {
         return newValue != null ? newValue : currentValue;
+    }
+
+    public void updateProfileImageKey(String profileImageKey) {
+        this.profileImageKey = profileImageKey;
     }
 }

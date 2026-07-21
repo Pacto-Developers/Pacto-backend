@@ -212,6 +212,12 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(ProfileImageAccessDeniedException.class)
+    public ResponseEntity<?> handleProfileImageAccessDenied(ProfileImageAccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(CampaignNotOpenException.class)
     public ResponseEntity<?> handleCampaignNotOpen(CampaignNotOpenException e) {
         return ResponseEntity.badRequest()
