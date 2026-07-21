@@ -16,8 +16,11 @@ import com.pacto.api.common.exception.DuplicateEmailException;
 import com.pacto.api.common.exception.EmailNotFoundException;
 import com.pacto.api.common.exception.InvalidPasswordException;
 import com.pacto.api.common.exception.MissingRoleException;
+import com.pacto.api.common.exception.ProfileImageAccessDeniedException;
 import com.pacto.api.common.exception.RoleMismatchException;
 import com.pacto.api.common.exception.UserNotFoundException;
+import com.pacto.api.file.domain.FileCategory;
+import com.pacto.api.file.service.FileUploadService;
 import com.pacto.api.wallet.entity.Wallet;
 import com.pacto.api.wallet.repository.WalletRepository;
 import org.junit.jupiter.api.Test;
@@ -26,9 +29,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.time.Duration;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +52,7 @@ class AuthServiceTest {
     @Mock WalletRepository walletRepository;
     @Mock BloggerProfileRepository bloggerProfileRepository;
     @Mock AdvertiserProfileRepository advertiserProfileRepository;
+    @Mock FileUploadService fileUploadService;
     @InjectMocks AuthService authService;
 
     @Test
@@ -512,5 +520,114 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.updateMyProfile(1L, request))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("유저를 찾을 수 없습니다.");
+    }
+
+    @Test
+    void uploadProfileImage_블로거는_업로드에_성공하고_profileImageKey를_저장한다() {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile profile = BloggerProfile.create(user);
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "profile.png", "image/png", "dummy-image-bytes".getBytes());
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+        when(fileUploadService.upload(FileCategory.PROFILE, 1L, file))
+                .thenReturn("profiles/1/new-key.png");
+
+        String objectKey = authService.uploadProfileImage(1L, file);
+
+        assertThat(objectKey).isEqualTo("profiles/1/new-key.png");
+        assertThat(profile.getProfileImageKey()).isEqualTo("profiles/1/new-key.png");
+        verify(fileUploadService, never()).delete(any());
+    }
+
+    @Test
+    void uploadProfileImage_기존_이미지가_있으면_업로드_후_기존_키를_삭제한다() {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile profile = BloggerProfile.create(user);
+        profile.updateProfileImageKey("profiles/1/old-key.png");
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "profile.png", "image/png", "dummy-image-bytes".getBytes());
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+        when(fileUploadService.upload(FileCategory.PROFILE, 1L, file))
+                .thenReturn("profiles/1/new-key.png");
+
+        authService.uploadProfileImage(1L, file);
+
+        assertThat(profile.getProfileImageKey()).isEqualTo("profiles/1/new-key.png");
+        verify(fileUploadService).delete("profiles/1/old-key.png");
+    }
+
+    @Test
+    void uploadProfileImage_광고주는_예외를_던지고_S3를_호출하지_않는다() {
+        User user = User.builder()
+                .userId(1L).email("advertiser@test.com").password("encoded").role(Role.ADVERTISER).build();
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "profile.png", "image/png", "dummy-image-bytes".getBytes());
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.uploadProfileImage(1L, file))
+                .isInstanceOf(ProfileImageAccessDeniedException.class)
+                .hasMessage("블로거만 프로필 이미지를 업로드할 수 있습니다.");
+
+        verifyNoInteractions(fileUploadService);
+        verify(bloggerProfileRepository, never()).findById(any());
+    }
+
+    @Test
+    void uploadProfileImage_유저없음_예외() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "profile.png", "image/png", "dummy-image-bytes".getBytes());
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.uploadProfileImage(1L, file))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("유저를 찾을 수 없습니다.");
+
+        verifyNoInteractions(fileUploadService);
+    }
+
+    @Test
+    void getMe_profileImageKey가_없으면_profileImageDownloadUrl은_null이다() {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile profile = BloggerProfile.create(user);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+
+        MeResponse response = authService.getMe(1L);
+
+        assertThat(response.getBloggerProfile().getProfileImageDownloadUrl()).isNull();
+        verifyNoInteractions(fileUploadService);
+    }
+
+    @Test
+    void getMe_profileImageKey가_있으면_presigned_URL로_변환한다() throws MalformedURLException {
+        User user = User.builder()
+                .userId(1L).email("blogger@test.com").password("encoded").role(Role.BLOGGER).build();
+        BloggerProfile profile = BloggerProfile.create(user);
+        profile.updateProfileImageKey("profiles/1/photo.png");
+        URL presignedUrl = new URL("https://test-bucket.s3.amazonaws.com/profiles/1/photo.png?X-Amz-Signature=abc");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bloggerProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
+        when(fileUploadService.getPresignedUrl(eq("profiles/1/photo.png"), any(Duration.class)))
+                .thenReturn(presignedUrl);
+
+        MeResponse response = authService.getMe(1L);
+
+        assertThat(response.getBloggerProfile().getProfileImageDownloadUrl())
+                .isEqualTo(presignedUrl.toString());
+
+        ArgumentCaptor<Duration> durationCaptor = ArgumentCaptor.forClass(Duration.class);
+        verify(fileUploadService).getPresignedUrl(eq("profiles/1/photo.png"), durationCaptor.capture());
+        assertThat(durationCaptor.getValue()).isEqualTo(Duration.ofMinutes(10));
     }
 }
