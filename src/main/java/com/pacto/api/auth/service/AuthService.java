@@ -29,9 +29,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final Duration PRESIGNED_URL_EXPIRATION = Duration.ofMinutes(10);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -200,7 +204,8 @@ public class AuthService {
                     user.getUserId(),
                     user.getEmail(),
                     user.getRole().name(),
-                    profile
+                    profile,
+                    resolveProfileImageUrl(profile.getProfileImageKey())
             );
         }
 
@@ -212,6 +217,13 @@ public class AuthService {
                 user.getRole().name(),
                 profile
         );
+    }
+
+    private String resolveProfileImageUrl(String profileImageKey) {
+        if (profileImageKey == null || profileImageKey.isBlank()) {
+            return null;
+        }
+        return fileUploadService.getPresignedUrl(profileImageKey, PRESIGNED_URL_EXPIRATION).toString();
     }
 
     @Transactional
@@ -253,7 +265,8 @@ public class AuthService {
                     user.getUserId(),
                     user.getEmail(),
                     user.getRole().name(),
-                    profile
+                    profile,
+                    resolveProfileImageUrl(profile.getProfileImageKey())
             );
         }
 
