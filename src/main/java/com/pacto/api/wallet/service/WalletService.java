@@ -62,7 +62,7 @@ public class WalletService {
             throw new InvalidWithdrawalAmountException();
         }
 
-        Wallet wallet = walletRepository.findByUserId(userId)
+        Wallet wallet = walletRepository.findWithLockByUserId(userId)
                 .orElseThrow(WalletNotFoundException::new);
 
         if (wallet.getBalance() < request.getAmount()) {
@@ -93,7 +93,7 @@ public class WalletService {
             throw new InvalidChargeAmountException();
         }
 
-        Wallet wallet = walletRepository.findByUserId(userId)
+        Wallet wallet = walletRepository.findWithLockByUserId(userId)
                 .orElseThrow(WalletNotFoundException::new);
 
         wallet.addBalance(amount);

@@ -114,7 +114,7 @@ class WalletServiceTest {
         Withdrawal savedWithdrawal = Withdrawal.create(wallet, 30000, "카카오뱅크", "111");
         ReflectionTestUtils.setField(savedWithdrawal, "withdrawalId", 1L);
 
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(wallet));
         when(walletRepository.save(any(Wallet.class))).thenReturn(wallet);
         when(withdrawalRepository.save(any(Withdrawal.class))).thenReturn(savedWithdrawal);
 
@@ -144,7 +144,7 @@ class WalletServiceTest {
     @Test
     void 출금신청_잔액_부족() {
         // balance 기본값 0
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(wallet));
 
         WithdrawRequest request = new WithdrawRequest();
         ReflectionTestUtils.setField(request, "amount", 10000);
@@ -178,7 +178,7 @@ class WalletServiceTest {
         ReflectionTestUtils.setField(wallet, "balance", 10000);
         Withdrawal savedWithdrawal = Withdrawal.create(wallet, 10000, "카카오뱅크", "111");
         ReflectionTestUtils.setField(savedWithdrawal, "withdrawalId", 1L);
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(wallet));
         when(withdrawalRepository.save(any(Withdrawal.class))).thenReturn(savedWithdrawal);
 
         WithdrawRequest request = new WithdrawRequest();
@@ -198,7 +198,7 @@ class WalletServiceTest {
     @Test
     void 결제충전_성공() {
         ReflectionTestUtils.setField(wallet, "balance", 10000);
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(wallet));
 
         walletService.chargeByPayment(1L, 30000, 7L);
 
@@ -216,7 +216,7 @@ class WalletServiceTest {
 
     @Test
     void 결제충전_지갑이_없으면_WalletNotFoundException() {
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> walletService.chargeByPayment(1L, 30000, 7L))
                 .isInstanceOf(WalletNotFoundException.class)
@@ -232,7 +232,7 @@ class WalletServiceTest {
                 .isInstanceOf(InvalidChargeAmountException.class)
                 .hasMessage("충전 금액은 0보다 커야 합니다.");
 
-        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository, never()).findWithLockByUserId(any());
         verify(walletRepository, never()).save(any());
         verify(pointHistoryRepository, never()).save(any());
     }
