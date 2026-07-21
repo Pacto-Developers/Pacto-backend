@@ -34,6 +34,9 @@ public class Payment {
     @Column(name = "amount", nullable = false, updatable = false)
     private int amount;
 
+    @Column(name = "refunded_amount", nullable = false, columnDefinition = "integer default 0")
+    private int refundedAmount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
@@ -55,6 +58,7 @@ public class Payment {
         payment.userId = userId;
         payment.merchantUid = merchantUid;
         payment.amount = amount;
+        payment.refundedAmount = 0;
         payment.status = PaymentStatus.READY;
         return payment;
     }
@@ -70,5 +74,28 @@ public class Payment {
 
     public void markCanceled() {
         this.status = PaymentStatus.CANCELED;
+    }
+
+    public int getRefundableAmount() {
+        return amount - refundedAmount;
+    }
+
+    public void applyRefund(int refundAmount) {
+        if (status != PaymentStatus.PAID && status != PaymentStatus.PARTIALLY_REFUNDED) {
+            throw new IllegalStateException("환불 가능한 결제 상태가 아닙니다.");
+        }
+
+        if (refundAmount <= 0) {
+            throw new IllegalArgumentException("환불 금액은 0보다 커야 합니다.");
+        }
+
+        if (refundAmount > getRefundableAmount()) {
+            throw new IllegalArgumentException("환불 가능 금액을 초과했습니다.");
+        }
+
+        this.refundedAmount += refundAmount;
+        this.status = refundedAmount == amount
+                ? PaymentStatus.REFUNDED
+                : PaymentStatus.PARTIALLY_REFUNDED;
     }
 }
