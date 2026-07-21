@@ -26,6 +26,9 @@ public class Mission {
     @Column(nullable = false, unique = true)
     private Long escrowId;
 
+    @Column(nullable = true)
+    private Long applicationId;
+
     private String submittedUrl;
 
     @Column(nullable = false)
@@ -75,18 +78,11 @@ public class Mission {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Mission(Long campaignId, Long bloggerId) {
-        this.campaignId = campaignId;
-        this.bloggerId = bloggerId;
-        this.status = MissionStatus.READY;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public Mission(Long campaignId, Long bloggerId, Long escrowId) {
+    public Mission(Long campaignId, Long bloggerId, Long escrowId, Long applicationId) {
         this.campaignId = campaignId;
         this.bloggerId = bloggerId;
         this.escrowId = escrowId;
+        this.applicationId = applicationId;
         this.status = MissionStatus.READY;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
