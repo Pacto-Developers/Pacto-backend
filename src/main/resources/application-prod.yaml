@@ -24,7 +24,7 @@ jwt:
   expiration: ${JWT_EXPIRATION:3600000}
 
 portone:
-  base-url: https://api.iamport.kr
+  base-url: https://api.portone.io
   api-key: ${PORTONE_API_KEY:}
   api-secret: ${PORTONE_API_SECRET:}
 
