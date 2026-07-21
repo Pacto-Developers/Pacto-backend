@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/api/v1/payments/*"
                         ).hasRole("ADVERTISER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments").hasRole("ADVERTISER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/*/refund").hasRole("ADVERTISER")
                         .requestMatchers(HttpMethod.PATCH,
                                 "/api/v1/applications/*/accept",
                                 "/api/v1/applications/*/reject"

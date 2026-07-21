@@ -7,6 +7,8 @@ import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
+import com.pacto.api.payment.dto.PaymentRefundRequest;
+import com.pacto.api.payment.dto.PaymentRefundResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.dto.PaymentWebhookRequest;
 import com.pacto.api.payment.service.PaymentService;
@@ -70,6 +72,31 @@ public class PaymentController {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.success("결제 요청 생성 성공", paymentService.createPayment(userId, request)));
+    }
+
+    @Operation(
+            summary = "결제 환불",
+            description = "본인의 PAID 또는 PARTIALLY_REFUNDED 결제를 전액 또는 부분 환불합니다."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            content = @Content(schema = @Schema(implementation = PaymentRefundResponse.class))
+    )
+    @PostMapping("/{paymentId}/refund")
+    public ResponseEntity<CommonResponse<PaymentRefundResponse>> refundPayment(
+            Authentication authentication,
+            @PathVariable Long paymentId,
+            @RequestBody PaymentRefundRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        PaymentRefundResponse response = paymentService.refundPayment(
+                userId,
+                paymentId,
+                request.getAmount(),
+                request.getReason(),
+                request.getIdempotencyKey()
+        );
+        return ResponseEntity.ok(CommonResponse.success("결제 환불 성공", response));
     }
 
     @Operation(summary = "포트원 결제 웹훅 수신", description = "포트원 V2 결제 완료 웹훅을 수신해 결제를 확정합니다.")

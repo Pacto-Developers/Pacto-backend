@@ -13,6 +13,7 @@ import com.pacto.api.payment.client.PortOneClient;
 import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
+import com.pacto.api.payment.dto.PaymentRefundResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.entity.PaymentRefund;
@@ -91,7 +92,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentRefund refundPayment(
+    public PaymentRefundResponse refundPayment(
             Long userId,
             Long paymentId,
             int amount,
@@ -108,7 +109,7 @@ public class PaymentService {
                 .findByPayment_PaymentIdAndIdempotencyKey(paymentId, idempotencyKey)
                 .orElse(null);
         if (existingRefund != null) {
-            return existingRefund;
+            return PaymentRefundResponse.from(existingRefund);
         }
 
         validateRefundablePayment(payment, amount);
@@ -131,7 +132,7 @@ public class PaymentService {
 
         payment.applyRefund(amount);
         refund.markSucceeded(portOneRefund.cancellationId());
-        return refund;
+        return PaymentRefundResponse.from(refund);
     }
 
     private void validateReady(Payment payment) {

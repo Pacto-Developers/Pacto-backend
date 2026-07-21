@@ -64,6 +64,7 @@ class SecurityConfigIntegrationTest {
                 Arguments.of(HttpMethod.GET, "/api/v1/payments"),
                 Arguments.of(HttpMethod.GET, "/api/v1/payments/1"),
                 Arguments.of(HttpMethod.POST, "/api/v1/payments"),
+                Arguments.of(HttpMethod.POST, "/api/v1/payments/1/refund"),
                 Arguments.of(HttpMethod.PATCH, "/api/v1/applications/1/accept"),
                 Arguments.of(HttpMethod.PATCH, "/api/v1/applications/1/reject"),
                 Arguments.of(HttpMethod.GET, "/api/v1/applications/campaign/1"),

@@ -12,6 +12,7 @@ import com.pacto.api.payment.client.PortOneClient;
 import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
+import com.pacto.api.payment.dto.PaymentRefundResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.entity.PaymentRefund;
@@ -61,6 +62,9 @@ class PaymentServiceTest {
         assertThat(response.getUserId()).isEqualTo(1L);
         assertThat(response.getMerchantUid()).startsWith("payment_");
         assertThat(response.getAmount()).isEqualTo(10000);
+        assertThat(response.getRefundedAmount()).isZero();
+        assertThat(response.getRefundableAmount()).isEqualTo(10000);
+        assertThat(response.isRefundAvailable()).isFalse();
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.READY);
 
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
@@ -78,6 +82,9 @@ class PaymentServiceTest {
 
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).getMerchantUid()).isEqualTo("payment-1");
+        assertThat(response.getContent().get(0).getRefundedAmount()).isZero();
+        assertThat(response.getContent().get(0).getRefundableAmount()).isEqualTo(10000);
+        assertThat(response.getContent().get(0).isRefundAvailable()).isFalse();
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(paymentRepository).findByUserId(org.mockito.ArgumentMatchers.eq(1L), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
@@ -110,6 +117,9 @@ class PaymentServiceTest {
         assertThat(response.getMerchantUid()).isEqualTo("payment-1");
         assertThat(response.getImpUid()).isEqualTo("imp-1");
         assertThat(response.getAmount()).isEqualTo(10000);
+        assertThat(response.getRefundedAmount()).isZero();
+        assertThat(response.getRefundableAmount()).isEqualTo(10000);
+        assertThat(response.isRefundAvailable()).isTrue();
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.PAID);
     }
 
@@ -217,13 +227,17 @@ class PaymentServiceTest {
                 "payment-1", 3000, 10000, "부분 환불", "refund-request-1"
         )).thenReturn(new PortOneCancelResponse("cancellation-1", 3000, "SUCCEEDED"));
 
-        PaymentRefund refund = paymentService.refundPayment(
+        PaymentRefundResponse refund = paymentService.refundPayment(
                 1L, 7L, 3000, "부분 환불", "refund-request-1"
         );
 
         assertThat(refund.getRefundId()).isEqualTo(15L);
-        assertThat(refund.getStatus()).isEqualTo(PaymentRefundStatus.SUCCEEDED);
+        assertThat(refund.getRefundStatus()).isEqualTo(PaymentRefundStatus.SUCCEEDED);
         assertThat(refund.getPortoneCancellationId()).isEqualTo("cancellation-1");
+        assertThat(refund.getRefundAmount()).isEqualTo(3000);
+        assertThat(refund.getRefundedAmount()).isEqualTo(3000);
+        assertThat(refund.getRefundableAmount()).isEqualTo(7000);
+        assertThat(refund.getPaymentStatus()).isEqualTo(PaymentStatus.PARTIALLY_REFUNDED);
         assertThat(payment.getRefundedAmount()).isEqualTo(3000);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PARTIALLY_REFUNDED);
         verify(walletService).deductByPaymentRefund(1L, 3000, 15L);
@@ -238,11 +252,13 @@ class PaymentServiceTest {
                 "payment-1", 7000, 7000, "나머지 환불", "refund-request-2"
         )).thenReturn(new PortOneCancelResponse("cancellation-2", 7000, "SUCCEEDED"));
 
-        PaymentRefund refund = paymentService.refundPayment(
+        PaymentRefundResponse refund = paymentService.refundPayment(
                 1L, 7L, 7000, "나머지 환불", "refund-request-2"
         );
 
-        assertThat(refund.getStatus()).isEqualTo(PaymentRefundStatus.SUCCEEDED);
+        assertThat(refund.getRefundStatus()).isEqualTo(PaymentRefundStatus.SUCCEEDED);
+        assertThat(refund.getPaymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        assertThat(refund.getRefundableAmount()).isZero();
         assertThat(payment.getRefundedAmount()).isEqualTo(10000);
         assertThat(payment.getRefundableAmount()).isZero();
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
@@ -260,11 +276,12 @@ class PaymentServiceTest {
                 7L, "refund-request-1"
         )).thenReturn(Optional.of(existingRefund));
 
-        PaymentRefund refund = paymentService.refundPayment(
+        PaymentRefundResponse refund = paymentService.refundPayment(
                 1L, 7L, 3000, "부분 환불", "refund-request-1"
         );
 
-        assertThat(refund).isSameAs(existingRefund);
+        assertThat(refund.getRefundStatus()).isEqualTo(PaymentRefundStatus.SUCCEEDED);
+        assertThat(refund.getPortoneCancellationId()).isEqualTo("cancellation-1");
         verifyNoInteractions(portOneClient, walletService);
     }
 
