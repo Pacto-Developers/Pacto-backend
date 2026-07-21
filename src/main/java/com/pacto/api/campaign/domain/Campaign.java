@@ -2,11 +2,14 @@ package com.pacto.api.campaign.domain;
 
 import com.pacto.api.common.exception.CampaignSlotFullException;
 import com.pacto.api.common.exception.InvalidCampaignStatusException;
+import com.pacto.api.file.exception.FileValidationException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -14,6 +17,8 @@ import java.util.Map;
 @Getter
 @NoArgsConstructor
 public class Campaign {
+
+    private static final int MAX_GUIDELINE_IMAGES = 5;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +42,10 @@ public class Campaign {
     @Column(columnDefinition = "jsonb")
     @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     private Map<String, Object> guidelines;
+
+    @Column(columnDefinition = "jsonb")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    private List<String> guidelineImageKeys = new ArrayList<>();
 
     @Column(nullable = false)
     private LocalDateTime deadline;
@@ -63,6 +72,23 @@ public class Campaign {
         this.totalSlots = totalSlots;
         this.remainingSlots = totalSlots;
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateThumbnail(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void validateGuidelineImageCapacity(int newImageCount) {
+        if (this.guidelineImageKeys.size() + newImageCount > MAX_GUIDELINE_IMAGES) {
+            throw new FileValidationException("가이드라인 이미지는 최대 " + MAX_GUIDELINE_IMAGES + "장까지 업로드할 수 있습니다.");
+        }
+    }
+
+    public void addGuidelineImages(List<String> objectKeys) {
+        validateGuidelineImageCapacity(objectKeys.size());
+        this.guidelineImageKeys.addAll(objectKeys);
         this.updatedAt = LocalDateTime.now();
     }
 

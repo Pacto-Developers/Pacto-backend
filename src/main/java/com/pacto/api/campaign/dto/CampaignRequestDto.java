@@ -11,7 +11,6 @@ import java.util.Map;
 @NoArgsConstructor
 public class CampaignRequestDto {
     private String title;
-    private String thumbnailUrl;
     private Integer rewardPoint;
     private Map<String, Object> guidelines;
     private LocalDateTime deadline;
