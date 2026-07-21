@@ -10,7 +10,8 @@
         "StringLike": {
           "s3:prefix": [
             "campaigns/*",
-            "users/*"
+            "users/*",
+            "profiles/*"
           ]
         }
       }
@@ -25,7 +26,8 @@
       ],
       "Resource": [
         "arn:aws:s3:::pacto-prod-assets-829279763575/campaigns/*",
-        "arn:aws:s3:::pacto-prod-assets-829279763575/users/*"
+        "arn:aws:s3:::pacto-prod-assets-829279763575/users/*",
+        "arn:aws:s3:::pacto-prod-assets-829279763575/profiles/*"
       ]
     }
   ]
