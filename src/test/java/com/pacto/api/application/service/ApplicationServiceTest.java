@@ -46,7 +46,7 @@ class ApplicationServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.ACCEPTED);
         verify(notificationService).notifyApplicationAccepted(2L, 10L, "팩토 캠페인");
-        verify(missionService).acceptMission(10L, 2L, 30L);
+        verify(missionService).acceptMission(10L, 2L, 30L, 20L);
     }
 
     @Test

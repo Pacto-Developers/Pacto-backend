@@ -69,7 +69,12 @@ public class ApplicationService {
                 application.getCampaignId(),
                 application.getBloggerId()
         );
-        missionService.acceptMission(application.getCampaignId(), application.getBloggerId(), escrowId);
+        missionService.acceptMission(
+                application.getCampaignId(),
+                application.getBloggerId(),
+                escrowId,
+                application.getApplicationId()
+        );
         notificationService.notifyApplicationAccepted(
                 application.getBloggerId(),
                 campaign.getCampaignId(),
