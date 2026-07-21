@@ -39,6 +39,16 @@ class PaymentRepositoryTest {
     }
 
     @Test
+    void 환불_처리를_위해_paymentId로_잠금_조회한다() {
+        Payment payment = paymentRepository.save(Payment.createReady(1L, "payment-2", 10000));
+
+        Optional<Payment> found = paymentRepository.findWithLockByPaymentId(payment.getPaymentId());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getPaymentId()).isEqualTo(payment.getPaymentId());
+    }
+
+    @Test
     void 결제_완료_후_impUid로_조회한다() {
         Payment payment = Payment.createReady(1L, "payment-1", 10000);
         payment.markPaid("imp-1");

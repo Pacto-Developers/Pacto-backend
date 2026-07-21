@@ -110,6 +110,18 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidPaymentRefundException.class)
+    public ResponseEntity<?> handleInvalidPaymentRefund(InvalidPaymentRefundException e) {
+        return ResponseEntity.badRequest()
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentRefundNotAllowedException.class)
+    public ResponseEntity<?> handlePaymentRefundNotAllowed(PaymentRefundNotAllowedException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(InvalidNotificationPageRequestException.class)
     public ResponseEntity<?> handleInvalidNotificationPageRequest(InvalidNotificationPageRequestException e) {
         return ResponseEntity.badRequest()
