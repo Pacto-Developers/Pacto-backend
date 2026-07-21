@@ -36,7 +36,7 @@ public class PointHistoryResponseMapper {
             case CAMPAIGN -> campaignRepository.findById(history.getReferenceId());
             case ESCROW -> escrowLedgerRepository.findById(history.getReferenceId())
                     .flatMap(this::findCampaignByEscrow);
-            case PAYMENT, WITHDRAWAL -> Optional.empty();
+            case PAYMENT, PAYMENT_REFUND, WITHDRAWAL -> Optional.empty();
         };
     }
 
