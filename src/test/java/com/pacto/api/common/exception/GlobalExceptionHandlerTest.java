@@ -59,6 +59,14 @@ class GlobalExceptionHandlerTest {
 
         @GetMapping("/test/invalid-withdrawal-amount")
         void throwInvalidWithdrawalAmount() { throw new InvalidWithdrawalAmountException(); }
+
+        @GetMapping("/test/invalid-payment-refund")
+        void throwInvalidPaymentRefund() {
+            throw new InvalidPaymentRefundException("환불 금액은 0보다 커야 합니다.");
+        }
+
+        @GetMapping("/test/payment-refund-not-allowed")
+        void throwPaymentRefundNotAllowed() { throw new PaymentRefundNotAllowedException(); }
     }
 
     @Test
@@ -147,5 +155,21 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("출금 금액은 10,000원 이상이어야 합니다."));
+    }
+
+    @Test
+    void 잘못된_결제_환불_요청은_400_반환() throws Exception {
+        mockMvc.perform(get("/test/invalid-payment-refund"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("환불 금액은 0보다 커야 합니다."));
+    }
+
+    @Test
+    void 환불할_수_없는_결제_상태는_409_반환() throws Exception {
+        mockMvc.perform(get("/test/payment-refund-not-allowed"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("환불할 수 없는 결제 상태입니다."));
     }
 }

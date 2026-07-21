@@ -18,6 +18,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Payment> findWithLockByMerchantUid(String merchantUid);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Payment> findWithLockByPaymentId(Long paymentId);
+
     Optional<Payment> findByImpUid(String impUid);
 
     boolean existsByMerchantUid(String merchantUid);

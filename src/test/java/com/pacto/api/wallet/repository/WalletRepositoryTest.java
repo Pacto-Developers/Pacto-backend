@@ -39,6 +39,16 @@ class WalletRepositoryTest {
     }
 
     @Test
+    void 환불_처리를_위해_userId로_지갑을_잠금_조회한다() {
+        walletRepository.save(Wallet.create(3L));
+
+        Optional<Wallet> found = walletRepository.findWithLockByUserId(3L);
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getUserId()).isEqualTo(3L);
+    }
+
+    @Test
     void 존재하지_않는_userId로_조회시_빈_결과() {
         Optional<Wallet> found = walletRepository.findByUserId(999L);
         assertThat(found).isEmpty();

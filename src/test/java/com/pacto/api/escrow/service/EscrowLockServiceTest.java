@@ -48,7 +48,7 @@ class EscrowLockServiceTest {
         ReflectionTestUtils.setField(advertiserWallet, "walletId", 100L);
         ReflectionTestUtils.setField(advertiserWallet, "balance", 200000);
 
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
 
         escrowLockService.lockCampaignBudget(campaign);
 
@@ -74,7 +74,7 @@ class EscrowLockServiceTest {
         ReflectionTestUtils.setField(advertiserWallet, "walletId", 100L);
         ReflectionTestUtils.setField(advertiserWallet, "balance", 100000);
 
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
 
         assertThatThrownBy(() -> escrowLockService.lockCampaignBudget(campaign))
                 .isInstanceOf(InsufficientBalanceException.class)
@@ -108,7 +108,7 @@ class EscrowLockServiceTest {
         assertThat(escrow.getBloggerId()).isEqualTo(42L);
         assertThat(escrow.getAmount()).isEqualTo(50000);
         assertThat(escrow.getStatus()).isEqualTo(EscrowStatus.LOCKED);
-        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository, never()).findWithLockByUserId(any());
         verify(walletRepository, never()).save(any());
         verify(pointHistoryRepository, never()).save(any());
     }
@@ -123,7 +123,7 @@ class EscrowLockServiceTest {
         ReflectionTestUtils.setField(advertiserWallet, "lockedBalance", 150000);
 
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
 
         escrowLockService.refundUnusedBudget(10L);
 
@@ -152,7 +152,7 @@ class EscrowLockServiceTest {
         ReflectionTestUtils.setField(advertiserWallet, "lockedBalance", 150000);
 
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
 
         escrowLockService.refundUnusedBudget(10L);
         escrowLockService.refundUnusedBudget(10L);
@@ -160,7 +160,7 @@ class EscrowLockServiceTest {
         assertThat(campaign.getRemainingSlots()).isEqualTo(0);
         assertThat(advertiserWallet.getBalance()).isEqualTo(100000);
         assertThat(advertiserWallet.getLockedBalance()).isEqualTo(50000);
-        verify(walletRepository).findByUserId(1L);
+        verify(walletRepository).findWithLockByUserId(1L);
         verify(walletRepository).save(advertiserWallet);
         verify(campaignRepository).save(campaign);
         verify(pointHistoryRepository).save(any(PointHistory.class));
@@ -178,7 +178,7 @@ class EscrowLockServiceTest {
 
         escrowLockService.refundUnusedBudget(10L);
 
-        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository, never()).findWithLockByUserId(any());
         verify(walletRepository, never()).save(any());
         verify(pointHistoryRepository, never()).save(any());
         verify(campaignRepository, never()).save(any());
@@ -192,7 +192,7 @@ class EscrowLockServiceTest {
                 .isInstanceOf(CampaignNotFoundException.class)
                 .hasMessage("캠페인을 찾을 수 없습니다.");
 
-        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository, never()).findWithLockByUserId(any());
         verify(walletRepository, never()).save(any());
         verify(escrowLedgerRepository, never()).save(any());
         verify(pointHistoryRepository, never()).save(any());

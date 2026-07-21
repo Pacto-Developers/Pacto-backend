@@ -23,6 +23,15 @@ public class PaymentDetailResponse {
     @Schema(description = "결제 금액", example = "10000")
     private final int amount;
 
+    @Schema(description = "누적 환불 금액", example = "3000")
+    private final int refundedAmount;
+
+    @Schema(description = "남은 환불 가능 금액", example = "7000")
+    private final int refundableAmount;
+
+    @Schema(description = "결제 상태 기준 환불 가능 여부", example = "true")
+    private final boolean refundAvailable;
+
     @Schema(description = "결제 상태", example = "PAID")
     private final PaymentStatus status;
 
@@ -37,6 +46,9 @@ public class PaymentDetailResponse {
             String merchantUid,
             String impUid,
             int amount,
+            int refundedAmount,
+            int refundableAmount,
+            boolean refundAvailable,
             PaymentStatus status,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
@@ -45,6 +57,9 @@ public class PaymentDetailResponse {
         this.merchantUid = merchantUid;
         this.impUid = impUid;
         this.amount = amount;
+        this.refundedAmount = refundedAmount;
+        this.refundableAmount = refundableAmount;
+        this.refundAvailable = refundAvailable;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -56,9 +71,18 @@ public class PaymentDetailResponse {
                 payment.getMerchantUid(),
                 payment.getImpUid(),
                 payment.getAmount(),
+                payment.getRefundedAmount(),
+                payment.getRefundableAmount(),
+                isRefundAvailable(payment),
                 payment.getStatus(),
                 payment.getCreatedAt(),
                 payment.getUpdatedAt()
         );
+    }
+
+    private static boolean isRefundAvailable(Payment payment) {
+        return (payment.getStatus() == PaymentStatus.PAID
+                || payment.getStatus() == PaymentStatus.PARTIALLY_REFUNDED)
+                && payment.getRefundableAmount() > 0;
     }
 }

@@ -47,6 +47,16 @@ public class Wallet {
         this.balance -= amount;
     }
 
+    public void deductForPaymentRefund(int amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("환불 금액은 0보다 커야 합니다.");
+        }
+        if (this.balance < amount) {
+            throw new InsufficientBalanceException();
+        }
+        this.balance -= amount;
+    }
+
     public void lockBalance(int amount) {
         if (this.balance < amount) {
             throw new InsufficientBalanceException();

@@ -5,6 +5,8 @@ import com.pacto.api.common.dto.PageResponse;
 import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
+import com.pacto.api.payment.dto.PaymentRefundRequest;
+import com.pacto.api.payment.dto.PaymentRefundResponse;
 import com.pacto.api.payment.entity.Payment;
 import com.pacto.api.payment.service.PaymentService;
 import com.pacto.api.payment.service.PortOneWebhookVerifier;
@@ -18,11 +20,13 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,6 +67,29 @@ class PaymentControllerTest {
         assertThat(response.getBody().success()).isTrue();
         assertThat(response.getBody().message()).isEqualTo("결제 상세 조회 성공");
         assertThat(response.getBody().data()).isSameAs(payment);
+    }
+
+    @Test
+    void 결제_환불은_CommonResponse로_응답한다() {
+        PaymentRefundRequest request = new PaymentRefundRequest();
+        ReflectionTestUtils.setField(request, "amount", 3000);
+        ReflectionTestUtils.setField(request, "reason", "부분 환불");
+        ReflectionTestUtils.setField(request, "idempotencyKey", "refund-request-1");
+        PaymentRefundResponse refund = mock(PaymentRefundResponse.class);
+        when(paymentService.refundPayment(
+                1L, 7L, 3000, "부분 환불", "refund-request-1"
+        )).thenReturn(refund);
+
+        ResponseEntity<CommonResponse<PaymentRefundResponse>> response = paymentController.refundPayment(
+                new UsernamePasswordAuthenticationToken(1L, null),
+                7L,
+                request
+        );
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody().success()).isTrue();
+        assertThat(response.getBody().message()).isEqualTo("결제 환불 성공");
+        assertThat(response.getBody().data()).isSameAs(refund);
     }
 
     @Test

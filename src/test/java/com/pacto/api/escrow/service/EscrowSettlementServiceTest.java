@@ -55,8 +55,8 @@ class EscrowSettlementServiceTest {
 
         when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.of(escrow));
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
-        when(walletRepository.findByUserId(42L)).thenReturn(Optional.of(bloggerWallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
+        when(walletRepository.findWithLockByUserId(42L)).thenReturn(Optional.of(bloggerWallet));
 
         escrowSettlementService.release(505L);
 
@@ -88,7 +88,7 @@ class EscrowSettlementServiceTest {
 
         when(escrowLedgerRepository.findById(505L)).thenReturn(Optional.of(escrow));
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
+        when(walletRepository.findWithLockByUserId(1L)).thenReturn(Optional.of(advertiserWallet));
 
         escrowSettlementService.cancel(505L);
 

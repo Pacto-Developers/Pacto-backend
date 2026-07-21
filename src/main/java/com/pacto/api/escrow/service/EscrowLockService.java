@@ -86,7 +86,7 @@ public class EscrowLockService {
     }
 
     private Wallet getWallet(Long userId) {
-        return walletRepository.findByUserId(userId)
+        return walletRepository.findWithLockByUserId(userId)
                 .orElseThrow(WalletNotFoundException::new);
     }
 }

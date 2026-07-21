@@ -62,7 +62,7 @@ public class WalletService {
             throw new InvalidWithdrawalAmountException();
         }
 
-        Wallet wallet = walletRepository.findByUserId(userId)
+        Wallet wallet = walletRepository.findWithLockByUserId(userId)
                 .orElseThrow(WalletNotFoundException::new);
 
         if (wallet.getBalance() < request.getAmount()) {
@@ -93,7 +93,7 @@ public class WalletService {
             throw new InvalidChargeAmountException();
         }
 
-        Wallet wallet = walletRepository.findByUserId(userId)
+        Wallet wallet = walletRepository.findWithLockByUserId(userId)
                 .orElseThrow(WalletNotFoundException::new);
 
         wallet.addBalance(amount);
@@ -104,6 +104,26 @@ public class WalletService {
                 PointHistoryType.CHARGE,
                 paymentId,
                 PointHistoryReferenceType.PAYMENT
+        ));
+    }
+
+    @Transactional
+    public void deductByPaymentRefund(Long userId, int amount, Long paymentRefundId) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("환불 금액은 0보다 커야 합니다.");
+        }
+
+        Wallet wallet = walletRepository.findWithLockByUserId(userId)
+                .orElseThrow(WalletNotFoundException::new);
+
+        wallet.deductForPaymentRefund(amount);
+        walletRepository.save(wallet);
+        pointHistoryRepository.save(PointHistory.create(
+                wallet,
+                -amount,
+                PointHistoryType.PAYMENT_REFUND,
+                paymentRefundId,
+                PointHistoryReferenceType.PAYMENT_REFUND
         ));
     }
 }

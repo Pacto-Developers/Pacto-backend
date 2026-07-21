@@ -1,15 +1,24 @@
 package com.pacto.api.payment.service;
 
+import com.pacto.api.common.exception.InsufficientBalanceException;
+import com.pacto.api.common.exception.InvalidPaymentRefundException;
 import com.pacto.api.common.exception.InvalidPaymentPageRequestException;
 import com.pacto.api.common.exception.PaymentNotFoundException;
+import com.pacto.api.common.exception.PaymentRefundNotAllowedException;
 import com.pacto.api.common.exception.PaymentVerificationException;
+import com.pacto.api.common.exception.PortOneApiException;
+import com.pacto.api.payment.client.PortOneCancelResponse;
 import com.pacto.api.payment.client.PortOneClient;
 import com.pacto.api.payment.client.PortOnePaymentResponse;
 import com.pacto.api.payment.dto.PaymentCreateRequest;
 import com.pacto.api.payment.dto.PaymentDetailResponse;
+import com.pacto.api.payment.dto.PaymentRefundResponse;
 import com.pacto.api.payment.dto.PaymentResponse;
 import com.pacto.api.payment.entity.Payment;
+import com.pacto.api.payment.entity.PaymentRefund;
+import com.pacto.api.payment.entity.PaymentRefundStatus;
 import com.pacto.api.payment.entity.PaymentStatus;
+import com.pacto.api.payment.repository.PaymentRefundRepository;
 import com.pacto.api.payment.repository.PaymentRepository;
 import com.pacto.api.wallet.service.WalletService;
 import org.junit.jupiter.api.Test;
@@ -28,6 +37,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +46,7 @@ import static org.mockito.Mockito.when;
 class PaymentServiceTest {
 
     @Mock PaymentRepository paymentRepository;
+    @Mock PaymentRefundRepository paymentRefundRepository;
     @Mock PortOneClient portOneClient;
     @Mock WalletService walletService;
     @InjectMocks PaymentService paymentService;
@@ -51,6 +62,9 @@ class PaymentServiceTest {
         assertThat(response.getUserId()).isEqualTo(1L);
         assertThat(response.getMerchantUid()).startsWith("payment_");
         assertThat(response.getAmount()).isEqualTo(10000);
+        assertThat(response.getRefundedAmount()).isZero();
+        assertThat(response.getRefundableAmount()).isEqualTo(10000);
+        assertThat(response.isRefundAvailable()).isFalse();
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.READY);
 
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
@@ -68,6 +82,9 @@ class PaymentServiceTest {
 
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).getMerchantUid()).isEqualTo("payment-1");
+        assertThat(response.getContent().get(0).getRefundedAmount()).isZero();
+        assertThat(response.getContent().get(0).getRefundableAmount()).isEqualTo(10000);
+        assertThat(response.getContent().get(0).isRefundAvailable()).isFalse();
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(paymentRepository).findByUserId(org.mockito.ArgumentMatchers.eq(1L), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
@@ -100,6 +117,9 @@ class PaymentServiceTest {
         assertThat(response.getMerchantUid()).isEqualTo("payment-1");
         assertThat(response.getImpUid()).isEqualTo("imp-1");
         assertThat(response.getAmount()).isEqualTo(10000);
+        assertThat(response.getRefundedAmount()).isZero();
+        assertThat(response.getRefundableAmount()).isEqualTo(10000);
+        assertThat(response.isRefundAvailable()).isTrue();
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.PAID);
     }
 
@@ -197,5 +217,204 @@ class PaymentServiceTest {
 
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.READY);
         verifyNoInteractions(walletService);
+    }
+
+    @Test
+    void 결제_금액의_일부를_환불한다() {
+        Payment payment = paidPayment(10000);
+        stubRefund(payment, 15L);
+        when(portOneClient.cancelPayment(
+                "payment-1", 3000, 10000, "부분 환불", "refund-request-1"
+        )).thenReturn(new PortOneCancelResponse("cancellation-1", 3000, "SUCCEEDED"));
+
+        PaymentRefundResponse refund = paymentService.refundPayment(
+                1L, 7L, 3000, "부분 환불", "refund-request-1"
+        );
+
+        assertThat(refund.getRefundId()).isEqualTo(15L);
+        assertThat(refund.getRefundStatus()).isEqualTo(PaymentRefundStatus.SUCCEEDED);
+        assertThat(refund.getPortoneCancellationId()).isEqualTo("cancellation-1");
+        assertThat(refund.getRefundAmount()).isEqualTo(3000);
+        assertThat(refund.getRefundedAmount()).isEqualTo(3000);
+        assertThat(refund.getRefundableAmount()).isEqualTo(7000);
+        assertThat(refund.getPaymentStatus()).isEqualTo(PaymentStatus.PARTIALLY_REFUNDED);
+        assertThat(payment.getRefundedAmount()).isEqualTo(3000);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PARTIALLY_REFUNDED);
+        verify(walletService).deductByPaymentRefund(1L, 3000, 15L);
+    }
+
+    @Test
+    void 남은_결제_금액_전체를_환불하면_REFUNDED_상태가_된다() {
+        Payment payment = paidPayment(10000);
+        payment.applyRefund(3000);
+        stubRefund(payment, 16L);
+        when(portOneClient.cancelPayment(
+                "payment-1", 7000, 7000, "나머지 환불", "refund-request-2"
+        )).thenReturn(new PortOneCancelResponse("cancellation-2", 7000, "SUCCEEDED"));
+
+        PaymentRefundResponse refund = paymentService.refundPayment(
+                1L, 7L, 7000, "나머지 환불", "refund-request-2"
+        );
+
+        assertThat(refund.getRefundStatus()).isEqualTo(PaymentRefundStatus.SUCCEEDED);
+        assertThat(refund.getPaymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        assertThat(refund.getRefundableAmount()).isZero();
+        assertThat(payment.getRefundedAmount()).isEqualTo(10000);
+        assertThat(payment.getRefundableAmount()).isZero();
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+    }
+
+    @Test
+    void 같은_멱등성_키로_재요청하면_기존_환불을_반환한다() {
+        Payment payment = paidPayment(10000);
+        PaymentRefund existingRefund = PaymentRefund.create(
+                payment, 3000, "부분 환불", "refund-request-1"
+        );
+        existingRefund.markSucceeded("cancellation-1");
+        when(paymentRepository.findWithLockByPaymentId(7L)).thenReturn(Optional.of(payment));
+        when(paymentRefundRepository.findByPayment_PaymentIdAndIdempotencyKey(
+                7L, "refund-request-1"
+        )).thenReturn(Optional.of(existingRefund));
+
+        PaymentRefundResponse refund = paymentService.refundPayment(
+                1L, 7L, 3000, "부분 환불", "refund-request-1"
+        );
+
+        assertThat(refund.getRefundStatus()).isEqualTo(PaymentRefundStatus.SUCCEEDED);
+        assertThat(refund.getPortoneCancellationId()).isEqualTo("cancellation-1");
+        verifyNoInteractions(portOneClient, walletService);
+    }
+
+    @Test
+    void 다른_사용자의_결제는_환불할_수_없다() {
+        Payment payment = paidPayment(10000);
+        when(paymentRepository.findWithLockByPaymentId(7L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.refundPayment(
+                2L, 7L, 3000, "부분 환불", "refund-request-1"
+        ))
+                .isInstanceOf(PaymentNotFoundException.class)
+                .hasMessage("결제 요청을 찾을 수 없습니다.");
+
+        verifyNoInteractions(paymentRefundRepository, portOneClient, walletService);
+    }
+
+    @Test
+    void PAID나_PARTIALLY_REFUNDED가_아니면_환불할_수_없다() {
+        Payment payment = Payment.createReady(1L, "payment-1", 10000);
+        ReflectionTestUtils.setField(payment, "paymentId", 7L);
+        when(paymentRepository.findWithLockByPaymentId(7L)).thenReturn(Optional.of(payment));
+        when(paymentRefundRepository.findByPayment_PaymentIdAndIdempotencyKey(
+                7L, "refund-request-1"
+        )).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.refundPayment(
+                1L, 7L, 3000, "부분 환불", "refund-request-1"
+        ))
+                .isInstanceOf(PaymentRefundNotAllowedException.class)
+                .hasMessage("환불할 수 없는 결제 상태입니다.");
+
+        verifyNoInteractions(portOneClient, walletService);
+    }
+
+    @Test
+    void 남은_환불_가능_금액을_초과하면_환불할_수_없다() {
+        Payment payment = paidPayment(10000);
+        payment.applyRefund(3000);
+        when(paymentRepository.findWithLockByPaymentId(7L)).thenReturn(Optional.of(payment));
+        when(paymentRefundRepository.findByPayment_PaymentIdAndIdempotencyKey(
+                7L, "refund-request-1"
+        )).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.refundPayment(
+                1L, 7L, 7001, "부분 환불", "refund-request-1"
+        ))
+                .isInstanceOf(InvalidPaymentRefundException.class)
+                .hasMessage("남은 환불 가능 금액을 초과했습니다.");
+
+        verifyNoInteractions(portOneClient, walletService);
+    }
+
+    @Test
+    void 지갑_가용_잔액이_부족하면_포트원_취소를_호출하지_않는다() {
+        Payment payment = paidPayment(10000);
+        stubRefund(payment, 15L);
+        doThrow(new InsufficientBalanceException())
+                .when(walletService).deductByPaymentRefund(1L, 3000, 15L);
+
+        assertThatThrownBy(() -> paymentService.refundPayment(
+                1L, 7L, 3000, "부분 환불", "refund-request-1"
+        ))
+                .isInstanceOf(InsufficientBalanceException.class)
+                .hasMessage("잔액이 부족합니다.");
+
+        verifyNoInteractions(portOneClient);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
+    }
+
+    @Test
+    void 포트원_취소_금액이_다르면_로컬_결제_상태를_변경하지_않는다() {
+        Payment payment = paidPayment(10000);
+        stubRefund(payment, 15L);
+        when(portOneClient.cancelPayment(
+                "payment-1", 3000, 10000, "부분 환불", "refund-request-1"
+        )).thenReturn(new PortOneCancelResponse("cancellation-1", 2000, "SUCCEEDED"));
+
+        assertThatThrownBy(() -> paymentService.refundPayment(
+                1L, 7L, 3000, "부분 환불", "refund-request-1"
+        ))
+                .isInstanceOf(PortOneApiException.class)
+                .hasMessage("포트원 결제 취소 금액이 일치하지 않습니다.");
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(payment.getRefundedAmount()).isZero();
+    }
+
+    @Test
+    void 포트원_취소가_완료되지_않으면_로컬_결제_상태를_변경하지_않는다() {
+        Payment payment = paidPayment(10000);
+        stubRefund(payment, 15L);
+        when(portOneClient.cancelPayment(
+                "payment-1", 3000, 10000, "부분 환불", "refund-request-1"
+        )).thenReturn(new PortOneCancelResponse("cancellation-1", 3000, "REQUESTED"));
+
+        assertThatThrownBy(() -> paymentService.refundPayment(
+                1L, 7L, 3000, "부분 환불", "refund-request-1"
+        ))
+                .isInstanceOf(PortOneApiException.class)
+                .hasMessage("포트원 결제 취소가 완료되지 않았습니다.");
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(payment.getRefundedAmount()).isZero();
+    }
+
+    @Test
+    void 잘못된_환불_요청은_DB를_조회하지_않는다() {
+        assertThatThrownBy(() -> paymentService.refundPayment(
+                1L, 7L, 0, "부분 환불", "refund-request-1"
+        ))
+                .isInstanceOf(InvalidPaymentRefundException.class)
+                .hasMessage("환불 금액은 0보다 커야 합니다.");
+
+        verifyNoInteractions(paymentRepository, paymentRefundRepository, portOneClient, walletService);
+    }
+
+    private Payment paidPayment(int amount) {
+        Payment payment = Payment.createReady(1L, "payment-1", amount);
+        ReflectionTestUtils.setField(payment, "paymentId", 7L);
+        payment.markPaid("payment-1");
+        return payment;
+    }
+
+    private void stubRefund(Payment payment, Long refundId) {
+        when(paymentRepository.findWithLockByPaymentId(7L)).thenReturn(Optional.of(payment));
+        when(paymentRefundRepository.findByPayment_PaymentIdAndIdempotencyKey(
+                7L, "refund-request-" + (refundId.equals(16L) ? "2" : "1")
+        )).thenReturn(Optional.empty());
+        when(paymentRefundRepository.save(any(PaymentRefund.class))).thenAnswer(invocation -> {
+            PaymentRefund refund = invocation.getArgument(0);
+            ReflectionTestUtils.setField(refund, "refundId", refundId);
+            return refund;
+        });
     }
 }

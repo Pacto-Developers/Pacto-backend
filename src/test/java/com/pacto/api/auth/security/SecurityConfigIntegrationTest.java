@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.stream.Stream;
 
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class SecurityConfigIntegrationTest {
 
     @Autowired MockMvc mockMvc;
@@ -64,6 +66,7 @@ class SecurityConfigIntegrationTest {
                 Arguments.of(HttpMethod.GET, "/api/v1/payments"),
                 Arguments.of(HttpMethod.GET, "/api/v1/payments/1"),
                 Arguments.of(HttpMethod.POST, "/api/v1/payments"),
+                Arguments.of(HttpMethod.POST, "/api/v1/payments/1/refund"),
                 Arguments.of(HttpMethod.PATCH, "/api/v1/applications/1/accept"),
                 Arguments.of(HttpMethod.PATCH, "/api/v1/applications/1/reject"),
                 Arguments.of(HttpMethod.GET, "/api/v1/applications/campaign/1"),
