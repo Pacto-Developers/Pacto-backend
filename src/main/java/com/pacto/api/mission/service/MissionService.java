@@ -1,11 +1,16 @@
 package com.pacto.api.mission.service;
 
+import com.pacto.api.application.domain.Application;
+import com.pacto.api.application.domain.ApplicationStatus;
+import com.pacto.api.application.repository.ApplicationRepository;
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.domain.CampaignStatus;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.campaign.service.CampaignService;
+import com.pacto.api.common.exception.ApplicationNotFoundException;
 import com.pacto.api.common.exception.CampaignAccessDeniedException;
 import com.pacto.api.common.exception.CampaignNotFoundException;
+import com.pacto.api.common.exception.InvalidApplicationStatusException;
 import com.pacto.api.common.exception.InvalidCampaignStatusException;
 import com.pacto.api.common.exception.MissionAccessDeniedException;
 import com.pacto.api.common.exception.MissionNotFoundException;
@@ -31,6 +36,7 @@ public class MissionService {
     private final CampaignRepository campaignRepository;
     private final CampaignService campaignService;
     private final NotificationService notificationService;
+    private final ApplicationRepository applicationRepository;
 
     private static final Set<MissionStatus> TERMINAL_STATUSES =
             EnumSet.of(MissionStatus.APPROVED, MissionStatus.REJECTED, MissionStatus.CANCELLED);
@@ -124,13 +130,19 @@ public class MissionService {
 
     // 미션 수락 (에스크로 LOCK은 ApplicationService에서 처리)
     @Transactional
-    public Mission acceptMission(Long campaignId, Long bloggerId, Long escrowId) {
+    public Mission acceptMission(Long campaignId, Long bloggerId, Long escrowId, Long applicationId) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(ApplicationNotFoundException::new);
+        if (application.getStatus() != ApplicationStatus.ACCEPTED) {
+            throw new InvalidApplicationStatusException("선정된 지원서에 대해서만 미션을 생성할 수 있습니다.");
+        }
+
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("캠페인을 찾을 수 없습니다."));
         campaign.decreaseSlot();
         campaignRepository.save(campaign);
 
-        Mission mission = new Mission(campaignId, bloggerId, escrowId);
+        Mission mission = new Mission(campaignId, bloggerId, escrowId, applicationId);
         return missionRepository.save(mission);
     }
 

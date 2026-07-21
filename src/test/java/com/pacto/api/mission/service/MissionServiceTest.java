@@ -1,9 +1,14 @@
 package com.pacto.api.mission.service;
 
+import com.pacto.api.application.domain.Application;
+import com.pacto.api.application.domain.ApplicationStatus;
+import com.pacto.api.application.repository.ApplicationRepository;
 import com.pacto.api.campaign.domain.Campaign;
 import com.pacto.api.campaign.repository.CampaignRepository;
 import com.pacto.api.campaign.service.CampaignService;
+import com.pacto.api.common.exception.ApplicationNotFoundException;
 import com.pacto.api.common.exception.CampaignAccessDeniedException;
+import com.pacto.api.common.exception.InvalidApplicationStatusException;
 import com.pacto.api.escrow.service.EscrowSettlementService;
 import com.pacto.api.mission.domain.Mission;
 import com.pacto.api.mission.domain.MissionStatus;
@@ -37,12 +42,13 @@ class MissionServiceTest {
     @Mock CampaignRepository campaignRepository;
     @Mock CampaignService campaignService;
     @Mock NotificationService notificationService;
+    @Mock ApplicationRepository applicationRepository;
     @InjectMocks MissionService missionService;
 
     @Test
     void getMissionsByCampaignId는_캠페인_소유자의_미션만_조회한다() {
         Campaign campaign = campaign(1L, 10L);
-        List<Mission> missions = List.of(new Mission(10L, 2L, 100L));
+        List<Mission> missions = List.of(new Mission(10L, 2L, 100L, null));
         when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
         when(missionRepository.findByCampaignId(10L)).thenReturn(missions);
 
@@ -153,6 +159,51 @@ class MissionServiceTest {
         verify(campaignService, never()).completeCampaign(any());
     }
 
+    @Test
+    void acceptMission은_존재하지_않는_지원서면_예외를_던진다() {
+        when(applicationRepository.findById(20L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> missionService.acceptMission(10L, 2L, 30L, 20L))
+                .isInstanceOf(ApplicationNotFoundException.class);
+
+        verifyNoInteractions(campaignRepository, missionRepository);
+    }
+
+    @Test
+    void acceptMission은_ACCEPTED_상태가_아닌_지원서면_예외를_던진다() {
+        Application application = application(20L, ApplicationStatus.PENDING);
+        when(applicationRepository.findById(20L)).thenReturn(Optional.of(application));
+
+        assertThatThrownBy(() -> missionService.acceptMission(10L, 2L, 30L, 20L))
+                .isInstanceOf(InvalidApplicationStatusException.class);
+
+        verifyNoInteractions(campaignRepository, missionRepository);
+    }
+
+    @Test
+    void acceptMission은_정상_케이스에서_applicationId를_채운_미션을_생성한다() {
+        Campaign campaign = campaign(1L, 10L);
+        Application application = application(20L, ApplicationStatus.ACCEPTED);
+        when(applicationRepository.findById(20L)).thenReturn(Optional.of(application));
+        when(campaignRepository.findById(10L)).thenReturn(Optional.of(campaign));
+        when(missionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Mission result = missionService.acceptMission(10L, 2L, 30L, 20L);
+
+        assertThat(result.getCampaignId()).isEqualTo(10L);
+        assertThat(result.getBloggerId()).isEqualTo(2L);
+        assertThat(result.getEscrowId()).isEqualTo(30L);
+        assertThat(result.getApplicationId()).isEqualTo(20L);
+        verify(campaignRepository).save(campaign);
+    }
+
+    private Application application(Long applicationId, ApplicationStatus status) {
+        Application application = new Application(10L, 2L);
+        ReflectionTestUtils.setField(application, "applicationId", applicationId);
+        ReflectionTestUtils.setField(application, "status", status);
+        return application;
+    }
+
     private Campaign campaign(Long advertiserId, Long campaignId) {
         Campaign campaign = new Campaign(
                 advertiserId, "캠페인", null, 50000, Map.of(), LocalDateTime.now().plusDays(7), 3
@@ -162,7 +213,7 @@ class MissionServiceTest {
     }
 
     private Mission mission(Long missionId, Long campaignId, MissionStatus status) {
-        Mission mission = new Mission(campaignId, 2L, 500L);
+        Mission mission = new Mission(campaignId, 2L, 500L, null);
         ReflectionTestUtils.setField(mission, "missionId", missionId);
         ReflectionTestUtils.setField(mission, "status", status);
         return mission;
