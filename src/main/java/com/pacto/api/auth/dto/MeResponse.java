@@ -19,13 +19,14 @@ public class MeResponse {
             Long userId,
             String email,
             String role,
-            BloggerProfile bloggerProfile
+            BloggerProfile bloggerProfile,
+            String profileImageDownloadUrl
     ) {
         return new MeResponse(
                 userId,
                 email,
                 role,
-                BloggerProfileResponse.from(bloggerProfile),
+                BloggerProfileResponse.from(bloggerProfile, profileImageDownloadUrl),
                 null
         );
     }
@@ -56,8 +57,9 @@ public class MeResponse {
         private String accountNumber;
         private String accountHolder;
         private String profileImageUrl;
+        private String profileImageDownloadUrl;
 
-        private static BloggerProfileResponse from(BloggerProfile profile) {
+        private static BloggerProfileResponse from(BloggerProfile profile, String profileImageDownloadUrl) {
             return new BloggerProfileResponse(
                     profile.getName(),
                     profile.getBlogUrl(),
@@ -66,7 +68,8 @@ public class MeResponse {
                     profile.getBankName(),
                     profile.getAccountNumber(),
                     profile.getAccountHolder(),
-                    profile.getProfileImageUrl()
+                    profile.getProfileImageUrl(),
+                    profileImageDownloadUrl
             );
         }
     }

@@ -44,6 +44,9 @@ docs/
 src/main/resources/application-local.yaml
 src/main/resources/application-local.yml
 
+### logs ###
+logs/
+
 ### firebase ###
 firebase-service-account.json
 *-firebase-service-account.json

@@ -4,6 +4,7 @@ import com.pacto.api.common.response.CommonResponse;
 import com.pacto.api.escrow.exception.InvalidEscrowStateException;
 import com.pacto.api.file.exception.FileUploadException;
 import com.pacto.api.file.exception.FileValidationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -224,6 +226,12 @@ public class GlobalExceptionHandler {
                 .body(CommonResponse.failure(e.getMessage()));
     }
 
+    @ExceptionHandler(ProfileImageAccessDeniedException.class)
+    public ResponseEntity<?> handleProfileImageAccessDenied(ProfileImageAccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(CommonResponse.failure(e.getMessage()));
+    }
+
     @ExceptionHandler(CampaignNotOpenException.class)
     public ResponseEntity<?> handleCampaignNotOpen(CampaignNotOpenException e) {
         return ResponseEntity.badRequest()
@@ -244,6 +252,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(FileUploadException.class)
     public ResponseEntity<?> handleFileUpload(FileUploadException e) {
+        log.error("파일 업로드 실패 - cause: {}", e.getCause() != null ? e.getCause().toString() : "없음", e);
         return ResponseEntity.internalServerError()
                 .body(CommonResponse.failure(e.getMessage()));
     }
